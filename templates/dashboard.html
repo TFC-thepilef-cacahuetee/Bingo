@@ -1,10 +1,12 @@
 <!DOCTYPE html>
 <html lang="en">
+
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Document</title>
 </head>
+
 <body>
     <div class="dashboard-container">
         <header>
@@ -19,16 +21,20 @@
                     <h3>Multijugador 👥</h3>
                     <p>crear una sala con amigos</p>
                 </div>
-                <button type="submit" id="btn-sala" class="play-btn">Crear sala o Unirse </button>
+                <form method="POST" action="{{ url_for('crear_sala') }}">
+                    <button type="submit" id="btn-sala" class="play-btn">Crear sala o Unirse</button>
+                </form>
 
                 <!-- Formulario para unirse a una sala existente -->
                 <div class="action-card" id="unirse-sala-card">
                     <h3>Unirse a una Sala 🕹️</h3>
-                    <form id="unirse-sala-form" method="POST" action="">
-                        <label for="codigo_sala">Código de la sala:</label>
-                        <input type="text" id="codigo_sala" name="codigo_sala" required>
-                        <button type="submit" class="play-btn">Unirse</button>
-                    </form>
+                    <!-- Formulario para unirse a una sala existente -->
+                        <form id="unirse-sala-form">
+                            <label for="codigo_sala">Código de la sala:</label>
+                            <input type="text" id="codigo_sala" name="codigo_sala" required>
+                            <button type="submit" class="play-btn">Unirse</button>
+                        </form>
+
                 </div>
 
 
@@ -52,5 +58,22 @@
             </a>
         </div>
     </div>
+    
+    <script>
+        document.getElementById('unirse-sala-form').addEventListener('submit', function(event) {
+            event.preventDefault(); // Evita que recargue la página
+        
+            const codigoSala = document.getElementById('codigo_sala').value.trim();
+        
+            if (codigoSala !== "") {
+                // Redirecciona al URL de la sala
+                window.location.href = `/sala/${codigoSala}`;
+            } else {
+                alert("⚠️ Por favor ingresa un código de sala.");
+            }
+        });
+        </script>
+        
 </body>
+
 </html>

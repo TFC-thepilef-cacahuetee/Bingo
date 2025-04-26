@@ -142,6 +142,7 @@ def registroRuta():
         except Exception as e:
             print(f"❌ Error al registrar usuario: {e}")
             flash("Error al registrar el usuario. Intenta de nuevo.")
+            print('HJ')
             return render_template('registro.html')
 
         finally:
@@ -158,6 +159,109 @@ def dashboardRuta():
         flash("⚠️ Debes iniciar sesión primero.")
         return redirect(url_for('loginRuta'))
     return render_template('dashboard.html')
+
+
+
+@app.route('/crear_sala', methods=['POST'])
+def crear_sala():
+    if 'user_id' not in session:
+        flash("⚠️ Debes iniciar sesión primero.")
+        return redirect(url_for('loginRuta'))
+
+    # Generar un ID de sala único
+    codigo_sala = ''.join(random.choices(string.ascii_uppercase + string.digits, k=6))
+
+    try:
+        connection = psycopg2.connect(
+            user=USER,
+            password=PASSWORD,
+            host=HOST,
+            port=PORT,
+            dbname=DBNAME
+        )
+        cursor = connection.cursor()
+
+        # Insertar la nueva sala
+        cursor.execute(
+            "INSERT INTO salas (id, creador_id, estado) VALUES (%s, %s, %s)",
+            (codigo_sala, session['user_id'], 'esperando')
+        )
+        connection.commit()
+
+        flash(f"✅ Sala creada: {codigo_sala}")
+        return redirect(url_for('salaRuta', codigo_sala=codigo_sala))
+
+    except Exception as e:
+        print(f"❌ Error al crear sala: {e}")
+        flash("⚠️ Error al crear la sala. Intenta de nuevo.")
+        return redirect(url_for('dashboardRuta'))
+
+    finally:
+        if cursor:
+            cursor.close()
+        if connection:
+            connection.close()
+
+
+# Para guardar quienes están en qué sala
+# Lista de salas (esto es solo un ejemplo, puede estar en una base de datos)
+salas = {}
+
+@socketio.on('unirse_sala')
+def handle_unirse_sala(data):
+    codigo_sala = data['codigo_sala']
+    username = data['username']
+    sid = request.sid  # <- El socket ID de quien acaba de entrar
+    
+    if codigo_sala not in salas:
+        salas[codigo_sala] = {'jugadores': []}
+
+    if username not in salas[codigo_sala]['jugadores']:
+        salas[codigo_sala]['jugadores'].append(username)
+
+    join_room(codigo_sala)
+
+    # 🔥 Manda la lista SOLO a este nuevo usuario
+    emit('actualizar_jugadores', {'jugadores': salas[codigo_sala]['jugadores']}, room=sid)
+
+    # 🔥 Ahora también manda a todos los demás (para que vean que alguien nuevo se unió)
+    emit('actualizar_jugadores', {'jugadores': salas[codigo_sala]['jugadores']}, room=codigo_sala)
+
+
+@socketio.on('salir_sala')
+def handle_salir_sala(data):
+    codigo_sala = data['codigo_sala']
+    username = data['username']
+    
+    # Verificar si la sala y el jugador existen en la lista
+    if codigo_sala in salas and username in salas[codigo_sala]['jugadores']:
+        salas[codigo_sala]['jugadores'].remove(username)
+    
+    # Emitir a todos los clientes conectados a esta sala la lista de jugadores
+    emit('actualizar_jugadores', {'jugadores': salas[codigo_sala]['jugadores']}, room=codigo_sala)
+
+    # Dejar el socket de la sala
+    leave_room(codigo_sala)
+
+
+
+@socketio.on('iniciar_partida')
+def handle_iniciar_partida(data):
+    codigo_sala = data['codigo_sala']
+    emit('partida_iniciada', room=codigo_sala)
+
+
+@app.route('/sala/<codigo_sala>')
+def salaRuta(codigo_sala):
+    if 'user_id' not in session:
+        flash("⚠️ Debes iniciar sesión primero.")
+        return redirect(url_for('loginRuta'))
+
+    # Emitir la lista de jugadores al cargar la sala
+    if codigo_sala in salas:
+        socketio.emit('actualizar_jugadores', {'jugadores': salas[codigo_sala]['jugadores']}, room=codigo_sala)
+
+    return render_template('sala.html', codigo_sala=codigo_sala)
 
 
 @app.route('/logout')
@@ -177,4 +281,5 @@ def logoutRuta():
 #app.register_error_handler(404, paginaNoEncontrada)
 
 if __name__ == '__main__':
-    app.run(debug=True, port=5000)
+    socketio.run(app, debug=True, port=5000)
+
