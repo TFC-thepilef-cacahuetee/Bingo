@@ -1,0 +1,78 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <title>Juego Individual</title>
+    <style>
+/* Estilos para los cartones de bingo */
+.bingo-container {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 20px;
+    justify-content: center;
+    padding: 20px;
+}
+
+.bingo-card {
+    border: 2px solid #333;
+    border-radius: 10px;
+    overflow: hidden;
+    box-shadow: 0 4px 10px rgba(0, 0, 0, 0.2);
+    width: 300px;
+    background-color: #fefefe;
+    font-family: 'Arial', sans-serif;
+}
+
+.bingo-header {
+    display: flex;
+    background-color: #6a5acd;
+    color: white;
+    font-weight: bold;
+    justify-content: space-around;
+    padding: 10px 0;
+    font-size: 1.2rem;
+}
+
+.bingo-row {
+    display: flex;
+}
+
+.bingo-cell {
+    flex: 1;
+    border: 1px solid #ccc;
+    text-align: center;
+    padding: 15px 0;
+    font-size: 1.1rem;
+}
+
+.bingo-cell.free {
+    background-color: #dcdcdc;
+    font-weight: bold;
+    color: #444;
+}
+
+    </style>
+</head>
+<body>
+    <h1>🎉 Juego Individual - Bingo 🎮</h1>
+    <h2>Cartones de Bingo</h2>
+    <div class="bingo-container">
+        {% for carton in cartones %}
+        <div class="bingo-card">
+            <div class="bingo-header">
+                <div>B</div><div>I</div><div>N</div><div>G</div><div>O</div>
+            </div>
+            {% for fila in carton %}
+            <div class="bingo-row">
+                {% for celda in fila %}
+                <div class="bingo-cell {% if celda == 'FREE' %}free{% endif %}">{{ celda }}</div>
+                {% endfor %}
+            </div>
+            {% endfor %}
+        </div>
+        {% endfor %}
+    </div>
+    
+
+</body>
+</html>

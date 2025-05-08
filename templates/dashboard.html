@@ -5,6 +5,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Document</title>
+    
 </head>
 
 <body>
@@ -41,16 +42,14 @@
                 <!-- Juego individual -->
                 <div class="action-card solo-card">
                     <h3>Juego Individual 🎮</h3>
-                    <form method="POST" action="">
+                    <form method="POST" action="{{ url_for('juego_individual') }}">
                         <div class="form-group">
-                            <label for="cantidad_cartones">Número de cartones:</label>
-                            <input type="number" id="cantidad_cartones" name="cantidad_cartones" min="1" max="5"
-                                value="1" required>
+                            <label for="cantidad_jugadores">Número de jugadores:</label>
+                            <input type="number" id="cantidad_jugadores" name="cantidad_jugadores" min="2" max="5" value="2" required>
                         </div>
                         <button type="submit" class="play-btn">Jugar Ahora 🎉</button>
                     </form>
                 </div>
-            </div>
 
             <!-- Historial de partidas -->
             <a href="" class="history-link">

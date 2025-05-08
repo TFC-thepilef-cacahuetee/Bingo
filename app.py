@@ -7,6 +7,7 @@ from flask import Flask, render_template, redirect, url_for, request, flash, ses
 from flask_socketio import SocketIO, emit, join_room, leave_room
 import random
 import string
+import random
 
 
 # Creamos la app Flask y le pasamos __name__ para que pueda encontrar rutas de archivos como templates y estáticos
@@ -270,6 +271,42 @@ def logoutRuta():
     session.clear()
     flash("✅ Has cerrado sesión exitosamente.")
     return redirect(url_for('indexRuta'))  # Redirigir al usuario a la página de inicio
+
+
+def generar_carton_bingo():
+    columnas = {
+        'B': random.sample(range(1, 16), 5),
+        'I': random.sample(range(16, 31), 5),
+        'N': random.sample(range(31, 46), 5),
+        'G': random.sample(range(46, 61), 5),
+        'O': random.sample(range(61, 76), 5),
+    }
+
+    # Reemplazar el centro por un espacio libre
+    columnas['N'][2] = "FREE"
+
+    # Convertir a una matriz 5x5 (lista de listas por filas)
+    carton = []
+    for i in range(5):
+        fila = [columnas['B'][i], columnas['I'][i], columnas['N'][i], columnas['G'][i], columnas['O'][i]]
+        carton.append(fila)
+    return carton
+
+@app.route('/juego_individual', methods=['POST'])
+def juego_individual():
+    if 'user_id' not in session:
+        flash("⚠️ Debes iniciar sesión primero.")
+        return redirect(url_for('loginRuta'))
+
+    cantidad_jugadores = int(request.form.get('cantidad_jugadores', 2))
+
+    if cantidad_jugadores < 2 or cantidad_jugadores > 5:
+        flash("⚠️ El número de jugadores debe estar entre 2 y 5.")
+        return redirect(url_for('dashboardRuta'))
+
+    cartones = [generar_carton_bingo() for _ in range(cantidad_jugadores)]
+    
+    return render_template('juego_individual.html', cartones=cartones)
 
 
 
