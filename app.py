@@ -12,7 +12,8 @@ import random
 
 # Creamos la app Flask y le pasamos __name__ para que pueda encontrar rutas de archivos como templates y estáticos
 app = Flask(__name__)
-socketio = SocketIO(app)
+socketio = SocketIO(app, async_mode='eventlet')
+
 
 # Definimos la ruta de la aplicacion, en este caso la ruta principal que es la que se carga al abrir la app
 @app.route('/')
