@@ -29,7 +29,7 @@ import os
 # Load environment variables from .env
 load_dotenv()
 
-# Esto es para que funcione el flashk y es lo que hace que se guarde en la cookie la session
+# Esto es para que funcione el flash y es lo que hace que se guarde en la cookie la session
 app.secret_key = os.getenv('SECRET_KEY')
 
 
@@ -320,4 +320,3 @@ def juego_individual():
 
 if __name__ == '__main__':
     socketio.run(app, debug=True, port=5000)
-
