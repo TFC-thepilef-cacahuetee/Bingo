@@ -1,6 +1,8 @@
 # En esta parte se pone todo lo que queramos importar para luego usarlo en la aplicacion
 # render_template es para renderizar el html desde la carpeta templates que la usa por defecto
 # Flask es el framework que estamos usando para crear la aplicacion web
+import evenlet
+eventlet.monkey_patch()
 from flask import Flask, render_template, redirect, url_for, request, flash, session
 
 
