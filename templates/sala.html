@@ -95,6 +95,19 @@
             btnEmpezar.disabled = !(todosListos && data.jugadores.length >= 2);
         });
 
+        document.getElementById('listoBtn').addEventListener('click', function () {
+            socket.emit('jugador_listo', { codigo_sala: codigoSala, username: username });
+            this.disabled = true;
+            this.textContent = "Esperando a los demás...";
+        });
+
+        socket.on('partida_iniciada', function () {
+            alert('🚀 ¡La partida ha comenzado!');
+            window.location.href = `/partida/${codigoSala}`;
+        });
+
+
+
         document.getElementById('salirSalaBtn').addEventListener('click', function () {
             console.log("Saliendo de sala:", codigoSala, username);
             socket.emit('salir_sala', { codigo_sala: codigoSala, username: username });

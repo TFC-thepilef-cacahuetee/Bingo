@@ -245,18 +245,24 @@ def emit_actualizacion_jugadores(codigo_sala):
     }, room=codigo_sala)
 
 @socketio.on('jugador_listo')
-def jugador_listo(data):
+def handle_jugador_listo(data):
     codigo_sala = data['codigo_sala']
     username = data['username']
 
-    if codigo_sala in salas and username in salas[codigo_sala]['listos']:
-        salas[codigo_sala]['listos'][username] = True
+    # Marcar jugador como listo
+    if codigo_sala in salas:
+        salas[codigo_sala]['listos'].add(username)
 
-        emit_actualizacion_jugadores(codigo_sala)
+        jugadores = salas[codigo_sala]['jugadores']
+        listos = salas[codigo_sala]['listos']
 
-        # Verificar si todos están listos para habilitar el botón o iniciar partida
-        if all(salas[codigo_sala]['listos'].values()):
-            emit('todos_listos', room=codigo_sala)
+        # Emitir estado actualizado (opcional)
+        emit('estado_listos', {'listos': list(listos)}, room=codigo_sala)
+
+        # Si todos están listos, iniciar la partida automáticamente
+        if set(jugadores) == set(listos):
+            emit('partida_iniciada', room=codigo_sala)
+
 
 
 @socketio.on('salir_sala')
