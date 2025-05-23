@@ -62,7 +62,8 @@
     <script>
         const socket = io();
         const codigoSala = "{{ codigo_sala }}";
-        const username = "{{ session['username'] }}";
+        const username = "{{ username }}";
+
 
         socket.emit('unirse_sala', { codigo_sala: codigoSala, username: username });
 
@@ -93,6 +94,16 @@
             const todosListos = Object.values(data.listos).every(v => v === true);
             btnEmpezar.disabled = !(todosListos && data.jugadores.length >= 2);
         });
+
+        document.getElementById('salirSalaBtn').addEventListener('click', function () {
+            console.log("Saliendo de sala:", codigoSala, username);
+            socket.emit('salir_sala', { codigo_sala: codigoSala, username: username });
+
+            setTimeout(function () {
+                window.location.href = "/dashboard";
+            }, 300);
+        });
+
 
         // Evento cuando todos están listos (puedes mostrar alerta o directamente iniciar)
         socket.on('todos_listos', () => {

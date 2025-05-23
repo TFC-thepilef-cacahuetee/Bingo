@@ -1,11 +1,17 @@
 # En esta parte se pone todo lo que queramos importar para luego usarlo en la aplicacion
 # render_template es para renderizar el html desde la carpeta templates que la usa por defecto
 # Flask es el framework que estamos usando para crear la aplicacion web
+
 from flask import Flask, render_template, redirect, url_for, request, flash, session
 from flask_socketio import SocketIO, emit, join_room, leave_room
+
+import eventlet
+eventlet.monkey_patch()
+
 import random
 import string
 import random
+
 
 
 # Creamos la app Flask y le pasamos __name__ para que pueda encontrar rutas de archivos como templates y estáticos
@@ -282,11 +288,8 @@ def salaRuta(codigo_sala):
         flash("⚠️ Debes iniciar sesión primero.")
         return redirect(url_for('loginRuta'))
 
-    # Emitir la lista de jugadores al cargar la sala
-    if codigo_sala in salas:
-        socketio.emit('actualizar_jugadores', {'jugadores': salas[codigo_sala]['jugadores']}, room=codigo_sala)
+    return render_template('sala.html', codigo_sala=codigo_sala, username=session.get('username'))
 
-    return render_template('sala.html', codigo_sala=codigo_sala)
 
 
 @app.route('/logout')
