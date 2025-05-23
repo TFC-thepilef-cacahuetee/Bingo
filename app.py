@@ -24,7 +24,7 @@ def indexRuta():
 import psycopg2
 from dotenv import load_dotenv
 import os
-
+numeros_usados_global = set()
 
 # Load environment variables from .env
 load_dotenv()
@@ -275,22 +275,38 @@ def logoutRuta():
 
 
 def generar_carton_bingo():
-    columnas = {
-        'B': random.sample(range(1, 16), 5),
-        'I': random.sample(range(16, 31), 5),
-        'N': random.sample(range(31, 46), 5),
-        'G': random.sample(range(46, 61), 5),
-        'O': random.sample(range(61, 76), 5),
+    global numeros_usados_global
+
+    rangos = {
+        'B': range(1, 20),
+        'I': range(20, 40),
+        'N': range(40, 60),
+        'G': range(60, 80),
+        'O': range(89, 100)
     }
 
-    # Reemplazar el centro por un espacio libre
-    columnas['N'][2] = "FREE"
+    columnas = {}
+    
+    for letra, rango in rangos.items():
+        posibles = list(set(rango) - numeros_usados_global)
+        if len(posibles) < 5:
+            raise ValueError(f"No hay suficientes números disponibles para la columna {letra}")
+        seleccionados = random.sample(posibles, 5)
+        columnas[letra] = seleccionados
+        numeros_usados_global.update(seleccionados)
 
-    # Convertir a una matriz 5x5 (lista de listas por filas)
+    # Construir la matriz del cartón (lista de filas)
     carton = []
     for i in range(5):
         fila = [columnas['B'][i], columnas['I'][i], columnas['N'][i], columnas['G'][i], columnas['O'][i]]
         carton.append(fila)
+
+    # Agregar 10 espacios en blanco aleatorios
+    posiciones = [(i, j) for i in range(5) for j in range(5)]
+    blancos = random.sample(posiciones, 10)
+    for i, j in blancos:
+        carton[i][j] = ""
+
     return carton
 
 @app.route('/juego_individual', methods=['POST'])
@@ -305,6 +321,7 @@ def juego_individual():
         flash("⚠️ El número de jugadores debe estar entre 2 y 5.")
         return redirect(url_for('dashboardRuta'))
 
+    numeros_usados_global.clear()  # Limpiar números usados al comenzar una nueva partida
     cartones = [generar_carton_bingo() for _ in range(cantidad_jugadores)]
     
     return render_template('juego_individual.html', cartones=cartones)
