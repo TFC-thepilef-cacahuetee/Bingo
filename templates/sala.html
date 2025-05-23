@@ -44,6 +44,54 @@
         button:disabled {
             background-color: #cccccc;
         }
+        /* Estilos para los cartones de bingo */
+.bingo-container {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 20px;
+    justify-content: center;
+    padding: 20px;
+}
+
+.bingo-card {
+    border: 2px solid #333;
+    border-radius: 10px;
+    overflow: hidden;
+    box-shadow: 0 4px 10px rgba(0, 0, 0, 0.2);
+    width: 300px;
+    background-color: #fefefe;
+    font-family: 'Arial', sans-serif;
+    margin-bottom: 20px;
+}
+
+.bingo-header {
+    display: flex;
+    background-color: #6a5acd;
+    color: white;
+    font-weight: bold;
+    justify-content: space-around;
+    padding: 10px 0;
+    font-size: 1.2rem;
+}
+
+.bingo-row {
+    display: flex;
+}
+
+.bingo-cell {
+    flex: 1;
+    border: 1px solid #ccc;
+    text-align: center;
+    padding: 15px 0;
+    font-size: 1.1rem;
+}
+
+.bingo-cell.free {
+    background-color: #dcdcdc;
+    font-weight: bold;
+    color: #444;
+}
+
     </style>
 </head>
 
@@ -56,7 +104,8 @@
         </div>
 
         <button id="btnListo">Estoy Listo ✅</button>
-        <button id="salirSalaBtn">Salir de la Sala ❌</button>
+<button id="salirSalaBtn">Salir de la Sala ❌</button>
+
     </div>
     <div id="contenedor-cartones" style="margin-top: 30px;"></div>
 
@@ -96,76 +145,86 @@
             const todosListos = Object.values(data.listos).every(v => v === true);
             btnEmpezar.disabled = !(todosListos && data.jugadores.length >= 2);
         });
-        socket.on('partida_iniciada', (data) => {
-            alert('🚀 ¡La partida ha comenzado!');
+        
+socket.on('partida_iniciada', (data) => {
+    alert('🚀 ¡La partida ha comenzado!');
 
-            const contenedor = document.getElementById('contenedor-cartones');
-            contenedor.innerHTML = ''; // Limpiar
+    const contenedor = document.getElementById('contenedor-cartones');
+    contenedor.innerHTML = ''; // Limpiar
 
-            const cartones = data.cartones; // { jugador: cartón, ... }
+    const cartones = data.cartones; // { jugador: cartón, ... }
 
-            Object.entries(cartones).forEach(([jugador, carton]) => {
-                const div = document.createElement('div');
-                div.style.border = '2px solid #4CAF50';
-                div.style.margin = '10px';
-                div.style.padding = '10px';
-                div.style.borderRadius = '10px';
-                div.style.backgroundColor = '#fff';
-                div.style.display = 'inline-block';
+    // Usar un div con clase bingo-container para envolver los cartones
+    const bingoContainer = document.createElement('div');
+    bingoContainer.className = 'bingo-container';
 
-                const titulo = document.createElement('h3');
-                titulo.textContent = jugador;
-                div.appendChild(titulo);
+    Object.entries(cartones).forEach(([jugador, carton]) => {
+        const cardDiv = document.createElement('div');
+        cardDiv.className = 'bingo-card';
 
-                const tabla = document.createElement('table');
-                tabla.style.borderCollapse = 'collapse';
+        const header = document.createElement('div');
+        header.className = 'bingo-header';
 
-                carton.forEach(fila => {
-                    const tr = document.createElement('tr');
-                    fila.forEach(celda => {
-                        const td = document.createElement('td');
-                        td.textContent = celda === "" ? "" : celda;
-                        td.style.border = '1px solid black';
-                        td.style.width = '30px';
-                        td.style.height = '30px';
-                        td.style.textAlign = 'center';
-                        td.style.fontWeight = 'bold';
-                        td.style.fontSize = '16px';
-                        tr.appendChild(td);
-                    });
-                    tabla.appendChild(tr);
-                });
+        // Letras B I N G O
+        ['B', 'I', 'N', 'G', 'O'].forEach(letra => {
+            const letraDiv = document.createElement('div');
+            letraDiv.textContent = letra;
+            letraDiv.style.flex = '1';
+            header.appendChild(letraDiv);
+        });
 
-                div.appendChild(tabla);
-                contenedor.appendChild(div);
+        cardDiv.appendChild(header);
+
+        // Las filas del carton
+        carton.forEach((fila, i) => {
+            const filaDiv = document.createElement('div');
+            filaDiv.className = 'bingo-row';
+
+            fila.forEach((celda, j) => {
+                const celdaDiv = document.createElement('div');
+                celdaDiv.className = 'bingo-cell';
+
+                if (celda === "") {
+                    celdaDiv.classList.add('free');
+                    celdaDiv.textContent = "Libre";
+                } else {
+                    celdaDiv.textContent = celda;
+                }
+
+                filaDiv.appendChild(celdaDiv);
             });
 
-            // Opcional: deshabilitar botón listo y otros controles
-            btnListo.disabled = true;
+            cardDiv.appendChild(filaDiv);
         });
 
+        // Nombre del jugador arriba o abajo
+        const nombreJugador = document.createElement('h3');
+        nombreJugador.style.textAlign = 'center';
+        nombreJugador.textContent = jugador;
 
-        document.getElementById('listoBtn').addEventListener('click', function () {
-            socket.emit('jugador_listo', { codigo_sala: codigoSala, username: username });
-            this.disabled = true;
-            this.textContent = "Esperando a los demás...";
-        });
+        // Insertar nombre antes del header o al final
+        cardDiv.insertBefore(nombreJugador, header);
 
-        socket.on('partida_iniciada', function () {
-            alert('🚀 ¡La partida ha comenzado!');
-            window.location.href = `/partida/${codigoSala}`;
-        });
+        bingoContainer.appendChild(cardDiv);
+    });
+
+    contenedor.appendChild(bingoContainer);
+
+    btnListo.disabled = true;
+});
 
 
+document.getElementById('salirSalaBtn').addEventListener('click', function () {
+    console.log("Botón salir presionado");
+    console.log("Saliendo de sala:", codigoSala, username);
+    socket.emit('salir_sala', { codigo_sala: codigoSala, username: username });
 
-        document.getElementById('salirSalaBtn').addEventListener('click', function () {
-            console.log("Saliendo de sala:", codigoSala, username);
-            socket.emit('salir_sala', { codigo_sala: codigoSala, username: username });
+    setTimeout(function () {
+        window.location.href = "/dashboard";
+    }, 300);
+});
 
-            setTimeout(function () {
-                window.location.href = "/dashboard";
-            }, 300);
-        });
+
 
 
         // Evento cuando todos están listos (puedes mostrar alerta o directamente iniciar)

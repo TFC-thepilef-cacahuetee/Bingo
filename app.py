@@ -272,16 +272,13 @@ def handle_jugador_listo(data):
 def handle_salir_sala(data):
     codigo_sala = data['codigo_sala']
     username = data['username']
-    
-    # Verificar si la sala y el jugador existen en la lista
-    if codigo_sala in salas and username in salas[codigo_sala]['jugadores']:
-        salas[codigo_sala]['jugadores'].remove(username)
-    
-    # Emitir a todos los clientes conectados a esta sala la lista de jugadores
-    emit('actualizar_jugadores', {'jugadores': salas[codigo_sala]['jugadores']}, room=codigo_sala)
 
-    # Dejar el socket de la sala
-    leave_room(codigo_sala)
+    if codigo_sala in salas:
+        if username in salas[codigo_sala]['jugadores']:
+            salas[codigo_sala]['jugadores'].remove(username)
+            salas[codigo_sala]['listos'].pop(username, None)
+            leave_room(codigo_sala)
+            emit_actualizacion_jugadores(codigo_sala)
 
 
 
