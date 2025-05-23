@@ -6,18 +6,17 @@ eventlet.monkey_patch()# En esta parte se pone todo lo que queramos importar par
 from flask import Flask, render_template, redirect, url_for, request, flash, session
 from flask_socketio import SocketIO, emit, join_room, leave_room
 
-
-
 import random
 import string
 import random
 
-
+import psycopg2
+from dotenv import load_dotenv
+import os
 
 # Creamos la app Flask y le pasamos __name__ para que pueda encontrar rutas de archivos como templates y estáticos
 app = Flask(__name__)
 socketio = SocketIO(app, async_mode='eventlet')
-
 
 # Definimos la ruta de la aplicacion, en este caso la ruta principal que es la que se carga al abrir la app
 @app.route('/')
@@ -25,17 +24,12 @@ def indexRuta():
     return render_template('index.html')
 
 # Esto es para hacer la conexion con la base de datos
-import psycopg2
-from dotenv import load_dotenv
-import os
 numeros_usados_global = set()
 
 # Load environment variables from .env
 load_dotenv()
-
 # Esto es para que funcione el flash y es lo que hace que se guarde en la cookie la session
 app.secret_key = os.getenv('SECRET_KEY')
-
 
 # Fetch variables
 USER = os.getenv("user")
@@ -268,6 +262,11 @@ def handle_jugador_listo(data):
 
             emit('partida_iniciada', {'cartones': cartones_por_jugador}, room=codigo_sala)
 
+            # Iniciar emisión de números en hilo separado
+            thread = threading.Thread(target=emitir_numeros_periodicos, args=(codigo_sala,))
+            thread.start()
+
+
 @socketio.on('salir_sala')
 def handle_salir_sala(data):
     codigo_sala = data['codigo_sala']
@@ -355,6 +354,34 @@ def juego_individual():
     cartones = [generar_carton_bingo_personalizado(numeros_usados) for _ in range(cantidad_jugadores)]
 
     return render_template('juego_individual.html', cartones=cartones)
+
+
+
+
+import threading
+import time
+
+# Diccionario para guardar estado de números ya emitidos por sala
+numeros_emitidos_por_sala = {}
+
+def emitir_numeros_periodicos(codigo_sala):
+    numeros_emitidos_por_sala[codigo_sala] = set()
+    todos_numeros = set(range(1, 91))
+
+    while True:
+        disponibles = list(todos_numeros - numeros_emitidos_por_sala[codigo_sala])
+        if not disponibles:
+            # Ya se emitieron todos los números, se puede terminar el ciclo
+            socketio.emit('fin_partida', room=codigo_sala)
+            break
+        
+        numero = random.choice(disponibles)
+        numeros_emitidos_por_sala[codigo_sala].add(numero)
+
+        socketio.emit('numero_nuevo', {'numero': numero}, room=codigo_sala)
+
+        time.sleep(5)  # Espera 5 segundos antes del siguiente número
+
 
 
 #si dejo el 404 el redirecionamiento no es automatico si lo quito es automatico

@@ -1,11 +1,13 @@
 <!DOCTYPE html>
 <html lang="en">
+
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Login</title>
     <link rel="stylesheet" href="../static/css/index.css">
 </head>
+
 <body>
     <div class="container">
         <h1>🔑 Iniciar Sesión</h1>
@@ -14,11 +16,13 @@
             <input type="text" id="username" name="username" required placeholder="Escribe tu nombre de usuario">
 
             <label for="dni">🆔 DNI:</label>
-            <input type="text" id="dni" name="dni" required placeholder="Introduce tu DNI" pattern="\d{8}[A-Za-z]" title="El DNI debe tener 8 dígitos seguidos de una letra.">
+            <input type="text" id="dni" name="dni" required placeholder="Introduce tu DNI" pattern="\d{8}[A-Za-z]"
+                title="El DNI debe tener 8 dígitos seguidos de una letra.">
 
             <button type="submit">🔑 Iniciar Sesión</button>
         </form>
         <p>¿No tienes una cuenta? <a href="{{ url_for('registroRuta') }}">📝 Regístrate aquí</a>.</p>
     </div>
 </body>
+
 </html>

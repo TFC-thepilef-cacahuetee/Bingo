@@ -5,7 +5,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Document</title>
-    
+
 </head>
 
 <body>
@@ -30,14 +30,13 @@
                 <div class="action-card" id="unirse-sala-card">
                     <h3>Unirse a una Sala 🕹️</h3>
                     <!-- Formulario para unirse a una sala existente -->
-                        <form id="unirse-sala-form">
-                            <label for="codigo_sala">Código de la sala:</label>
-                            <input type="text" id="codigo_sala" name="codigo_sala" required>
-                            <button type="submit" class="play-btn">Unirse</button>
-                        </form>
+                    <form id="unirse-sala-form">
+                        <label for="codigo_sala">Código de la sala:</label>
+                        <input type="text" id="codigo_sala" name="codigo_sala" required>
+                        <button type="submit" class="play-btn">Unirse</button>
+                    </form>
 
                 </div>
-
 
                 <!-- Juego individual -->
                 <div class="action-card solo-card">
@@ -45,34 +44,35 @@
                     <form method="POST" action="{{ url_for('juego_individual') }}">
                         <div class="form-group">
                             <label for="cantidad_jugadores">Número de jugadores:</label>
-                            <input type="number" id="cantidad_jugadores" name="cantidad_jugadores" min="2" max="5" value="2" required>
+                            <input type="number" id="cantidad_jugadores" name="cantidad_jugadores" min="2" max="5"
+                                value="2" required>
                         </div>
                         <button type="submit" class="play-btn">Jugar Ahora 🎉</button>
                     </form>
                 </div>
 
-            <!-- Historial de partidas -->
-            <a href="" class="history-link">
-                Ver mi historial de partidas 🏆
-            </a>
+                <!-- Historial de partidas -->
+                <a href="" class="history-link">
+                    Ver mi historial de partidas 🏆
+                </a>
+            </div>
         </div>
-    </div>
-    
-    <script>
-        document.getElementById('unirse-sala-form').addEventListener('submit', function(event) {
-            event.preventDefault(); // Evita que recargue la página
-        
-            const codigoSala = document.getElementById('codigo_sala').value.trim();
-        
-            if (codigoSala !== "") {
-                // Redirecciona al URL de la sala
-                window.location.href = `/sala/${codigoSala}`;
-            } else {
-                alert("⚠️ Por favor ingresa un código de sala.");
-            }
-        });
+
+        <script>
+            document.getElementById('unirse-sala-form').addEventListener('submit', function (event) {
+                event.preventDefault(); // Evita que recargue la página
+
+                const codigoSala = document.getElementById('codigo_sala').value.trim();
+
+                if (codigoSala !== "") {
+                    // Redirecciona al URL de la sala
+                    window.location.href = `/sala/${codigoSala}`;
+                } else {
+                    alert("⚠️ Por favor ingresa un código de sala.");
+                }
+            });
         </script>
-        
+
 </body>
 
 </html>
