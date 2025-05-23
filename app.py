@@ -350,11 +350,11 @@ def juego_individual():
         flash("⚠️ El número de jugadores debe estar entre 2 y 5.")
         return redirect(url_for('dashboardRuta'))
 
-    numeros_usados_global.clear()  # Limpiar números usados al comenzar una nueva partida
-    cartones = [generar_carton_bingo_personalizado() for _ in range(cantidad_jugadores)]
-    
-    return render_template('juego_individual.html', cartones=cartones)
+    numeros_usados = set()  # conjunto local para números usados en esta partida individual
 
+    cartones = [generar_carton_bingo_personalizado(numeros_usados) for _ in range(cantidad_jugadores)]
+
+    return render_template('juego_individual.html', cartones=cartones)
 
 
 #si dejo el 404 el redirecionamiento no es automatico si lo quito es automatico
