@@ -2,8 +2,6 @@
 # render_template es para renderizar el html desde la carpeta templates que la usa por defecto
 # Flask es el framework que estamos usando para crear la aplicacion web
 from flask import Flask, render_template, redirect, url_for, request, flash, session
-
-
 from flask_socketio import SocketIO, emit, join_room, leave_room
 import random
 import string
@@ -207,27 +205,52 @@ def crear_sala():
 
 # Para guardar quienes están en qué sala
 # Lista de salas (esto es solo un ejemplo, puede estar en una base de datos)
-salas = {}
+salas = {
+    'codigo_sala': {
+        'jugadores': ['user1', 'user2'],
+        'listos': {
+            'user1': False,
+            'user2': False,
+        }
+    }
+}
+
 
 @socketio.on('unirse_sala')
-def handle_unirse_sala(data):
+def unirse_sala(data):
     codigo_sala = data['codigo_sala']
     username = data['username']
-    sid = request.sid  # <- El socket ID de quien acaba de entrar
-    
+
     if codigo_sala not in salas:
-        salas[codigo_sala] = {'jugadores': []}
+        salas[codigo_sala] = {'jugadores': [], 'listos': {}}
 
     if username not in salas[codigo_sala]['jugadores']:
         salas[codigo_sala]['jugadores'].append(username)
+        salas[codigo_sala]['listos'][username] = False
 
     join_room(codigo_sala)
 
-    # 🔥 Manda la lista SOLO a este nuevo usuario
-    emit('actualizar_jugadores', {'jugadores': salas[codigo_sala]['jugadores']}, room=sid)
+    emit_actualizacion_jugadores(codigo_sala)
 
-    # 🔥 Ahora también manda a todos los demás (para que vean que alguien nuevo se unió)
-    emit('actualizar_jugadores', {'jugadores': salas[codigo_sala]['jugadores']}, room=codigo_sala)
+def emit_actualizacion_jugadores(codigo_sala):
+    emit('actualizar_jugadores_listos', {
+        'jugadores': salas[codigo_sala]['jugadores'],
+        'listos': salas[codigo_sala]['listos']
+    }, room=codigo_sala)
+
+@socketio.on('jugador_listo')
+def jugador_listo(data):
+    codigo_sala = data['codigo_sala']
+    username = data['username']
+
+    if codigo_sala in salas and username in salas[codigo_sala]['listos']:
+        salas[codigo_sala]['listos'][username] = True
+
+        emit_actualizacion_jugadores(codigo_sala)
+
+        # Verificar si todos están listos para habilitar el botón o iniciar partida
+        if all(salas[codigo_sala]['listos'].values()):
+            emit('todos_listos', room=codigo_sala)
 
 
 @socketio.on('salir_sala')

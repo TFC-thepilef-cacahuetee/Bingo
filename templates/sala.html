@@ -55,7 +55,7 @@
             <!-- Jugadores aparecerán aquí -->
         </div>
 
-        <button id="empezarPartidaBtn" disabled>Empezar Partida 🚀</button>
+        <button id="btnListo">Estoy Listo ✅</button>
         <button id="salirSalaBtn">Salir de la Sala ❌</button>
     </div>
 
@@ -64,41 +64,42 @@
         const codigoSala = "{{ codigo_sala }}";
         const username = "{{ session['username'] }}";
 
-        // Unirse a la sala
         socket.emit('unirse_sala', { codigo_sala: codigoSala, username: username });
 
-        // Actualizar la lista de jugadores cuando alguien se une
-        socket.on('actualizar_jugadores', function (data) {
-            const jugadoresDiv = document.getElementById('jugadores');
-            jugadoresDiv.innerHTML = '';  // Limpiar lista de jugadores
+        const btnListo = document.getElementById('btnListo');
+        const btnEmpezar = document.getElementById('empezarPartidaBtn');
+        const jugadoresDiv = document.getElementById('jugadores');
 
-            // Añadir cada jugador a la lista
-            data.jugadores.forEach(function (jugador) {
+        // Cuando el jugador presiona "Estoy Listo"
+        btnListo.addEventListener('click', () => {
+            socket.emit('jugador_listo', { codigo_sala: codigoSala, username: username });
+            btnListo.disabled = true;  // Para que no pueda pulsar más de una vez
+        });
+
+        // Actualizar lista con estado "listo"
+        socket.on('actualizar_jugadores_listos', data => {
+            jugadoresDiv.innerHTML = '';
+            data.jugadores.forEach(jugador => {
                 const div = document.createElement('div');
                 div.className = 'jugador';
-                div.textContent = jugador;
+
+                let estado = data.listos[jugador] ? '✅ Listo' : '❌ No listo';
+                div.textContent = `${jugador} - ${estado}`;
+
                 jugadoresDiv.appendChild(div);
             });
 
-            // Activar el botón de empezar partida si hay mínimo 2 jugadores
-            const btn = document.getElementById('empezarPartidaBtn');
-            btn.disabled = data.jugadores.length < 2;
+            // Botón empezar partida solo activado si todos están listos y al menos 2 jugadores
+            const todosListos = Object.values(data.listos).every(v => v === true);
+            btnEmpezar.disabled = !(todosListos && data.jugadores.length >= 2);
         });
 
-        socket.on('partida_iniciada', function () {
-            alert('🚀 La partida ha comenzado!');
-            // Aquí podrías redirigir a otra página o cambiar la vista
+        // Evento cuando todos están listos (puedes mostrar alerta o directamente iniciar)
+        socket.on('todos_listos', () => {
+            alert('¡Todos los jugadores están listos! Ahora el anfitrión puede iniciar la partida.');
         });
 
-        // Manejo de salida de la sala
-        document.getElementById('salirSalaBtn').addEventListener('click', function () {
-            // Enviar evento al servidor para que el jugador salga de la sala
-            socket.emit('salir_sala', { codigo_sala: codigoSala, username: username });
-
-            setTimeout(function () {
-                window.location.href = "/dashboard";  // Redirigir al dashboard (o la ruta que uses)
-            }, 300); // 300 milisegundos de delay opcional para mayor seguridad
-        });
+        // Ya tienes el botón salir implementado abajo en tu código
 
     </script>
 </body>
