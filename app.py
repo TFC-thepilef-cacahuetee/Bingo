@@ -1,12 +1,12 @@
-# En esta parte se pone todo lo que queramos importar para luego usarlo en la aplicacion
+import eventlet
+eventlet.monkey_patch()# En esta parte se pone todo lo que queramos importar para luego usarlo en la aplicacion
 # render_template es para renderizar el html desde la carpeta templates que la usa por defecto
 # Flask es el framework que estamos usando para crear la aplicacion web
 
 from flask import Flask, render_template, redirect, url_for, request, flash, session
 from flask_socketio import SocketIO, emit, join_room, leave_room
 
-import eventlet
-eventlet.monkey_patch()
+
 
 import random
 import string
@@ -249,20 +249,18 @@ def handle_jugador_listo(data):
     codigo_sala = data['codigo_sala']
     username = data['username']
 
-    # Marcar jugador como listo
-    if codigo_sala in salas:
-        salas[codigo_sala]['listos'].add(username)
+    if codigo_sala in salas and username in salas[codigo_sala]['listos']:
+        salas[codigo_sala]['listos'][username] = True  # marcar como listo
 
         jugadores = salas[codigo_sala]['jugadores']
-        listos = salas[codigo_sala]['listos']
+        listos_dict = salas[codigo_sala]['listos']
 
-        # Emitir estado actualizado (opcional)
-        emit('estado_listos', {'listos': list(listos)}, room=codigo_sala)
+        emit_actualizacion_jugadores(codigo_sala)
 
-        # Si todos están listos, iniciar la partida automáticamente
-        if set(jugadores) == set(listos):
+        # Verificar si todos están listos
+        todos_listos = all(listos_dict.get(j, False) for j in jugadores)
+        if todos_listos:
             emit('partida_iniciada', room=codigo_sala)
-
 
 
 @socketio.on('salir_sala')
