@@ -58,6 +58,8 @@
         <button id="btnListo">Estoy Listo ✅</button>
         <button id="salirSalaBtn">Salir de la Sala ❌</button>
     </div>
+    <div id="contenedor-cartones" style="margin-top: 30px;"></div>
+
 
     <script>
         const socket = io();
@@ -94,6 +96,54 @@
             const todosListos = Object.values(data.listos).every(v => v === true);
             btnEmpezar.disabled = !(todosListos && data.jugadores.length >= 2);
         });
+        socket.on('partida_iniciada', (data) => {
+            alert('🚀 ¡La partida ha comenzado!');
+
+            const contenedor = document.getElementById('contenedor-cartones');
+            contenedor.innerHTML = ''; // Limpiar
+
+            const cartones = data.cartones; // { jugador: cartón, ... }
+
+            Object.entries(cartones).forEach(([jugador, carton]) => {
+                const div = document.createElement('div');
+                div.style.border = '2px solid #4CAF50';
+                div.style.margin = '10px';
+                div.style.padding = '10px';
+                div.style.borderRadius = '10px';
+                div.style.backgroundColor = '#fff';
+                div.style.display = 'inline-block';
+
+                const titulo = document.createElement('h3');
+                titulo.textContent = jugador;
+                div.appendChild(titulo);
+
+                const tabla = document.createElement('table');
+                tabla.style.borderCollapse = 'collapse';
+
+                carton.forEach(fila => {
+                    const tr = document.createElement('tr');
+                    fila.forEach(celda => {
+                        const td = document.createElement('td');
+                        td.textContent = celda === "" ? "" : celda;
+                        td.style.border = '1px solid black';
+                        td.style.width = '30px';
+                        td.style.height = '30px';
+                        td.style.textAlign = 'center';
+                        td.style.fontWeight = 'bold';
+                        td.style.fontSize = '16px';
+                        tr.appendChild(td);
+                    });
+                    tabla.appendChild(tr);
+                });
+
+                div.appendChild(tabla);
+                contenedor.appendChild(div);
+            });
+
+            // Opcional: deshabilitar botón listo y otros controles
+            btnListo.disabled = true;
+        });
+
 
         document.getElementById('listoBtn').addEventListener('click', function () {
             socket.emit('jugador_listo', { codigo_sala: codigoSala, username: username });

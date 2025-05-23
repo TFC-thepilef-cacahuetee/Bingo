@@ -250,18 +250,23 @@ def handle_jugador_listo(data):
     username = data['username']
 
     if codigo_sala in salas and username in salas[codigo_sala]['listos']:
-        salas[codigo_sala]['listos'][username] = True  # marcar como listo
+        salas[codigo_sala]['listos'][username] = True
+
+        emit_actualizacion_jugadores(codigo_sala)
 
         jugadores = salas[codigo_sala]['jugadores']
         listos_dict = salas[codigo_sala]['listos']
 
-        emit_actualizacion_jugadores(codigo_sala)
-
-        # Verificar si todos están listos
         todos_listos = all(listos_dict.get(j, False) for j in jugadores)
         if todos_listos:
-            emit('partida_iniciada', room=codigo_sala)
+            numeros_usados_sala = set()
+            cartones_por_jugador = {}
 
+            for jugador in jugadores:
+                carton = generar_carton_bingo_personalizado(numeros_usados_sala)
+                cartones_por_jugador[jugador] = carton
+
+            emit('partida_iniciada', {'cartones': cartones_por_jugador}, room=codigo_sala)
 
 @socketio.on('salir_sala')
 def handle_salir_sala(data):
@@ -304,9 +309,7 @@ def logoutRuta():
     return redirect(url_for('indexRuta'))  # Redirigir al usuario a la página de inicio
 
 
-def generar_carton_bingo():
-    global numeros_usados_global
-
+def generar_carton_bingo_personalizado(numeros_usados):
     rangos = {
         'B': range(1, 20),
         'I': range(20, 40),
@@ -318,26 +321,25 @@ def generar_carton_bingo():
     columnas = {}
     
     for letra, rango in rangos.items():
-        posibles = list(set(rango) - numeros_usados_global)
+        posibles = list(set(rango) - numeros_usados)
         if len(posibles) < 5:
             raise ValueError(f"No hay suficientes números disponibles para la columna {letra}")
         seleccionados = random.sample(posibles, 5)
         columnas[letra] = seleccionados
-        numeros_usados_global.update(seleccionados)
+        numeros_usados.update(seleccionados)
 
-    # Construir la matriz del cartón (lista de filas)
     carton = []
     for i in range(5):
         fila = [columnas['B'][i], columnas['I'][i], columnas['N'][i], columnas['G'][i], columnas['O'][i]]
         carton.append(fila)
 
-    # Agregar 10 espacios en blanco aleatorios
     posiciones = [(i, j) for i in range(5) for j in range(5)]
     blancos = random.sample(posiciones, 10)
     for i, j in blancos:
         carton[i][j] = ""
 
     return carton
+
 
 @app.route('/juego_individual', methods=['POST'])
 def juego_individual():
@@ -352,7 +354,7 @@ def juego_individual():
         return redirect(url_for('dashboardRuta'))
 
     numeros_usados_global.clear()  # Limpiar números usados al comenzar una nueva partida
-    cartones = [generar_carton_bingo() for _ in range(cantidad_jugadores)]
+    cartones = [generar_carton_bingo_personalizado() for _ in range(cantidad_jugadores)]
     
     return render_template('juego_individual.html', cartones=cartones)
 
