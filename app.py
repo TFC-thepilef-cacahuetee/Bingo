@@ -10,6 +10,7 @@ from flask_socketio import SocketIO, emit, join_room, leave_room
 import random
 import string
 import random
+from hashlib import sha256
 
 
 # Creamos la app Flask y le pasamos __name__ para que pueda encontrar rutas de archivos como templates y estáticos
@@ -74,7 +75,10 @@ except Exception as e:
 def loginRuta():
     if request.method == 'POST':
         username = request.form.get('username')
-        dni = request.form.get('dni')
+        dni_plano = request.form.get('dni')
+
+        # Hashear el DNI ingresado
+        dni_hash = sha256(dni_plano.encode()).hexdigest()
 
         try:
             connection = psycopg2.connect(
@@ -86,12 +90,11 @@ def loginRuta():
             )
             cursor = connection.cursor()
 
-            # Validar que el nombre de usuario y DNI coincidan con un registro en la base de datos
-            cursor.execute("SELECT id, username FROM usuarios WHERE username = %s AND dni = %s", (username, dni))
+            # Validar que el nombre de usuario y DNI (hasheado) coincidan con un registro en la base de datos
+            cursor.execute("SELECT id, username FROM usuarios WHERE username = %s AND dni = %s", (username, dni_hash))
             user = cursor.fetchone()
 
             if user:
-                # Guardar el usuario en la sesión
                 session['user_id'] = user[0]
                 session['username'] = user[1]
                 flash("✅ ¡Bienvenido de nuevo!")
@@ -111,12 +114,16 @@ def loginRuta():
 
     return render_template('login.html')
 
+
 @app.route('/registro', methods=['GET', 'POST'])
 def registroRuta():
     if request.method == 'POST':
         username = request.form.get('username')
-        dni = request.form.get('dni')
+        dni_plano = request.form.get('dni')
         mayor_edad = 'mayor_edad' in request.form  # Devuelve True si está marcado
+
+        # Hashear el DNI
+        dni_hash = sha256(dni_plano.encode()).hexdigest()
 
         try:
             connection = psycopg2.connect(
@@ -129,7 +136,7 @@ def registroRuta():
             cursor = connection.cursor()
 
             # Validar si el usuario o el dni ya existen
-            cursor.execute("SELECT 1 FROM usuarios WHERE username = %s OR dni = %s", (username, dni))
+            cursor.execute("SELECT 1 FROM usuarios WHERE username = %s OR dni = %s", (username, dni_hash))
             if cursor.fetchone():
                 flash("⚠️ El nombre de usuario o DNI ya están registrados.")
                 return render_template('registro.html')
@@ -137,7 +144,7 @@ def registroRuta():
             # Insertar usuario nuevo
             cursor.execute(
                 "INSERT INTO usuarios (username, dni, mayor_edad) VALUES (%s, %s, %s)",
-                (username, dni, mayor_edad)
+                (username, dni_hash, mayor_edad)
             )
             connection.commit()
             flash("✅ Registro exitoso. Ahora puedes iniciar sesión.")
@@ -146,7 +153,6 @@ def registroRuta():
         except Exception as e:
             print(f"❌ Error al registrar usuario: {e}")
             flash("Error al registrar el usuario. Intenta de nuevo.")
-            print('HJ')
             return render_template('registro.html')
 
         finally:
@@ -156,6 +162,7 @@ def registroRuta():
                 connection.close()
 
     return render_template('registro.html')
+
 
 @app.route('/dashboard')
 def dashboardRuta():
