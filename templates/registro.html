@@ -1,4 +1,5 @@
 <!DOCTYPE html>
+
 <html lang="es">
 <head>
     <meta charset="UTF-8">
@@ -6,6 +7,7 @@
     <title>📝 Registro</title>
     <link rel="stylesheet" href="{{ url_for('static', filename='styles.css') }}">
 </head>
+
 <body>
     <div class="container">
         <h1>📝 Registro de Usuario</h1>
@@ -15,7 +17,8 @@
             <input type="text" id="username" name="username" required placeholder="Elige tu nombre de usuario">
 
             <label for="dni">🆔 DNI:</label>
-            <input type="text" id="dni" name="dni" required placeholder="Introduce tu DNI" pattern="\d{8}[A-Za-z]" title="El DNI debe tener 8 dígitos seguidos de una letra.">
+            <input type="text" id="dni" name="dni" required placeholder="Introduce tu DNI" pattern="\d{8}[A-Za-z]"
+                title="El DNI debe tener 8 dígitos seguidos de una letra.">
 
             <label>
                 <input type="checkbox" id="mayor_edad" name="mayor_edad" required>
@@ -27,4 +30,5 @@
         <p>¿Ya tienes una cuenta? <a href="{{ url_for('loginRuta') }}">🔑 Inicia sesión aquí</a>.</p>
     </div>
 </body>
+
 </html>

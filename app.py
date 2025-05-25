@@ -1,22 +1,23 @@
-# En esta parte se pone todo lo que queramos importar para luego usarlo en la aplicacion
+import eventlet
+eventlet.monkey_patch()# En esta parte se pone todo lo que queramos importar para luego usarlo en la aplicacion
 # render_template es para renderizar el html desde la carpeta templates que la usa por defecto
 # Flask es el framework que estamos usando para crear la aplicacion web
-import eventlet
-eventlet.monkey_patch()
+
 from flask import Flask, render_template, redirect, url_for, request, flash, session
-
-
 from flask_socketio import SocketIO, emit, join_room, leave_room
+
 import random
 import string
 import random
 from hashlib import sha256
 
+import psycopg2
+from dotenv import load_dotenv
+import os
 
 # Creamos la app Flask y le pasamos __name__ para que pueda encontrar rutas de archivos como templates y estáticos
 app = Flask(__name__)
 socketio = SocketIO(app, async_mode='eventlet')
-
 
 # Definimos la ruta de la aplicacion, en este caso la ruta principal que es la que se carga al abrir la app
 @app.route('/')
@@ -24,17 +25,12 @@ def indexRuta():
     return render_template('index.html')
 
 # Esto es para hacer la conexion con la base de datos
-import psycopg2
-from dotenv import load_dotenv
-import os
 numeros_usados_global = set()
 
 # Load environment variables from .env
 load_dotenv()
-
 # Esto es para que funcione el flash y es lo que hace que se guarde en la cookie la session
 app.secret_key = os.getenv('SECRET_KEY')
-
 
 # Fetch variables
 USER = os.getenv("user")
@@ -216,43 +212,79 @@ def crear_sala():
 
 # Para guardar quienes están en qué sala
 # Lista de salas (esto es solo un ejemplo, puede estar en una base de datos)
-salas = {}
+salas = {
+    'codigo_sala': {
+        'jugadores': ['user1', 'user2'],
+        'listos': {
+            'user1': False,
+            'user2': False,
+        }
+    }
+}
+
 
 @socketio.on('unirse_sala')
-def handle_unirse_sala(data):
+def unirse_sala(data):
     codigo_sala = data['codigo_sala']
     username = data['username']
-    sid = request.sid  # <- El socket ID de quien acaba de entrar
-    
+
     if codigo_sala not in salas:
-        salas[codigo_sala] = {'jugadores': []}
+        salas[codigo_sala] = {'jugadores': [], 'listos': {}}
 
     if username not in salas[codigo_sala]['jugadores']:
         salas[codigo_sala]['jugadores'].append(username)
+        salas[codigo_sala]['listos'][username] = False
 
     join_room(codigo_sala)
 
-    # 🔥 Manda la lista SOLO a este nuevo usuario
-    emit('actualizar_jugadores', {'jugadores': salas[codigo_sala]['jugadores']}, room=sid)
+    emit_actualizacion_jugadores(codigo_sala)
 
-    # 🔥 Ahora también manda a todos los demás (para que vean que alguien nuevo se unió)
-    emit('actualizar_jugadores', {'jugadores': salas[codigo_sala]['jugadores']}, room=codigo_sala)
+def emit_actualizacion_jugadores(codigo_sala):
+    emit('actualizar_jugadores_listos', {
+        'jugadores': salas[codigo_sala]['jugadores'],
+        'listos': salas[codigo_sala]['listos']
+    }, room=codigo_sala)
+
+@socketio.on('jugador_listo')
+def handle_jugador_listo(data):
+    codigo_sala = data['codigo_sala']
+    username = data['username']
+
+    if codigo_sala in salas and username in salas[codigo_sala]['listos']:
+        salas[codigo_sala]['listos'][username] = True
+
+        emit_actualizacion_jugadores(codigo_sala)
+
+        jugadores = salas[codigo_sala]['jugadores']
+        listos_dict = salas[codigo_sala]['listos']
+
+        todos_listos = all(listos_dict.get(j, False) for j in jugadores)
+        if todos_listos:
+            numeros_usados_sala = set()
+            cartones_por_jugador = {}
+
+            for jugador in jugadores:
+                carton = generar_carton_bingo_personalizado(numeros_usados_sala)
+                cartones_por_jugador[jugador] = carton
+
+            emit('partida_iniciada', {'cartones': cartones_por_jugador}, room=codigo_sala)
+
+            # Iniciar emisión de números en hilo separado
+            thread = threading.Thread(target=emitir_numeros_periodicos, args=(codigo_sala,))
+            thread.start()
 
 
 @socketio.on('salir_sala')
 def handle_salir_sala(data):
     codigo_sala = data['codigo_sala']
     username = data['username']
-    
-    # Verificar si la sala y el jugador existen en la lista
-    if codigo_sala in salas and username in salas[codigo_sala]['jugadores']:
-        salas[codigo_sala]['jugadores'].remove(username)
-    
-    # Emitir a todos los clientes conectados a esta sala la lista de jugadores
-    emit('actualizar_jugadores', {'jugadores': salas[codigo_sala]['jugadores']}, room=codigo_sala)
 
-    # Dejar el socket de la sala
-    leave_room(codigo_sala)
+    if codigo_sala in salas:
+        if username in salas[codigo_sala]['jugadores']:
+            salas[codigo_sala]['jugadores'].remove(username)
+            salas[codigo_sala]['listos'].pop(username, None)
+            leave_room(codigo_sala)
+            emit_actualizacion_jugadores(codigo_sala)
 
 
 
@@ -268,11 +300,8 @@ def salaRuta(codigo_sala):
         flash("⚠️ Debes iniciar sesión primero.")
         return redirect(url_for('loginRuta'))
 
-    # Emitir la lista de jugadores al cargar la sala
-    if codigo_sala in salas:
-        socketio.emit('actualizar_jugadores', {'jugadores': salas[codigo_sala]['jugadores']}, room=codigo_sala)
+    return render_template('sala.html', codigo_sala=codigo_sala, username=session.get('username'))
 
-    return render_template('sala.html', codigo_sala=codigo_sala)
 
 
 @app.route('/logout')
@@ -283,8 +312,10 @@ def logoutRuta():
     return redirect(url_for('indexRuta'))  # Redirigir al usuario a la página de inicio
 
 
+
 def generar_carton_bingo():
     global numeros_usados_global
+
 
     rangos = {
         'B': range(1, 20),
@@ -297,26 +328,32 @@ def generar_carton_bingo():
     columnas = {}
     
     for letra, rango in rangos.items():
+
         posibles = list(set(rango) - numeros_usados_global)
+
         if len(posibles) < 5:
             raise ValueError(f"No hay suficientes números disponibles para la columna {letra}")
         seleccionados = random.sample(posibles, 5)
         columnas[letra] = seleccionados
+
         numeros_usados_global.update(seleccionados)
 
     # Construir la matriz del cartón (lista de filas)
+
     carton = []
     for i in range(5):
         fila = [columnas['B'][i], columnas['I'][i], columnas['N'][i], columnas['G'][i], columnas['O'][i]]
         carton.append(fila)
 
     # Agregar 10 espacios en blanco aleatorios
+
     posiciones = [(i, j) for i in range(5) for j in range(5)]
     blancos = random.sample(posiciones, 10)
     for i, j in blancos:
         carton[i][j] = ""
 
     return carton
+
 
 @app.route('/juego_individual', methods=['POST'])
 def juego_individual():
@@ -332,8 +369,35 @@ def juego_individual():
 
     numeros_usados_global.clear()  # Limpiar números usados al comenzar una nueva partida
     cartones = [generar_carton_bingo() for _ in range(cantidad_jugadores)]
-    
+
     return render_template('juego_individual.html', cartones=cartones)
+
+
+
+
+import threading
+import time
+
+# Diccionario para guardar estado de números ya emitidos por sala
+numeros_emitidos_por_sala = {}
+
+def emitir_numeros_periodicos(codigo_sala):
+    numeros_emitidos_por_sala[codigo_sala] = set()
+    todos_numeros = set(range(1, 91))
+
+    while True:
+        disponibles = list(todos_numeros - numeros_emitidos_por_sala[codigo_sala])
+        if not disponibles:
+            # Ya se emitieron todos los números, se puede terminar el ciclo
+            socketio.emit('fin_partida', room=codigo_sala)
+            break
+        
+        numero = random.choice(disponibles)
+        numeros_emitidos_por_sala[codigo_sala].add(numero)
+
+        socketio.emit('numero_nuevo', {'numero': numero}, room=codigo_sala)
+
+        time.sleep(5)  # Espera 5 segundos antes del siguiente número
 
 
 
