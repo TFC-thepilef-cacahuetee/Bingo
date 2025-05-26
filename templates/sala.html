@@ -46,7 +46,6 @@
             background-color: #cccccc;
         }
 
-        /* Nuevos estilos para los cartones de bingo */
         .bingo-container {
             display: flex;
             flex-wrap: wrap;
@@ -108,11 +107,10 @@
         }
 
         .bingo-cell.marked {
-            background-color: #a5d6a7; /* Verde claro */
+            background-color: #a5d6a7;
             font-weight: bold;
         }
 
-        /* Estilos para los números salidos */
         .numeros-container {
             background-color: #f8f8f8;
             border-radius: 10px;
@@ -152,20 +150,17 @@
     <div class="sala-container">
         <h1>🎲 Sala de Bingo: <span id="codigoSala">{{ codigo_sala }}</span></h1>
         <h2>Jugadores en la sala:</h2>
-        <div id="jugadores" class="jugadores-lista">
-            <!-- Jugadores aparecerán aquí -->
-        </div>
+        <div id="jugadores" class="jugadores-lista"></div>
 
         <button id="btnListo">Estoy Listo ✅</button>
         <button id="salirSalaBtn">Salir de la Sala ❌</button>
 
-        <!-- Contenedor para números salidos -->
         <div id="contenedor-numeros" class="numeros-container" style="display: none;">
             <div class="numeros-titulo">Números salidos:</div>
             <div id="lista-numeros" class="numeros-lista"></div>
         </div>
     </div>
-    
+
     <div id="contenedor-cartones" class="bingo-container"></div>
 
     <script>
@@ -178,48 +173,39 @@
         const btnListo = document.getElementById('btnListo');
         const jugadoresDiv = document.getElementById('jugadores');
 
-        // Cuando el jugador presiona "Estoy Listo"
         btnListo.addEventListener('click', () => {
             socket.emit('jugador_listo', { codigo_sala: codigoSala, username: username });
             btnListo.disabled = true;
         });
 
-        // Actualizar lista con estado "listo"
         socket.on('actualizar_jugadores_listos', data => {
             jugadoresDiv.innerHTML = '';
             data.jugadores.forEach(jugador => {
                 const div = document.createElement('div');
                 div.className = 'jugador';
-
                 let estado = data.listos[jugador] ? '✅ Listo' : '❌ No listo';
                 div.textContent = `${jugador} - ${estado}`;
-
                 jugadoresDiv.appendChild(div);
             });
         });
 
-        // Función para marcar/desmarcar números
         function marcarNumero(celda, numero) {
             celda.classList.toggle('marked');
-            
-            // Opcional: Enviar al servidor que este número fue marcado
+
             socket.emit('numero_marcado', {
                 numero: numero,
                 marcado: celda.classList.contains('marked'),
                 codigo_sala: codigoSala,
                 username: username
             });
-            
-            // Verificar si hay bingo
+
             verificarBingo(celda.closest('.bingo-card'));
         }
 
-        // Función para verificar líneas o bingo completo
         function verificarBingo(carton) {
             const filas = carton.querySelectorAll('.bingo-row');
             let bingo = false;
-            
-            // Verificar filas
+
             filas.forEach(fila => {
                 const celdas = fila.querySelectorAll('.bingo-cell:not(.free)');
                 const marcadas = Array.from(celdas).filter(c => c.classList.contains('marked'));
@@ -227,17 +213,15 @@
                     bingo = true;
                 }
             });
-            
-            // Verificar columnas
+
             for (let i = 0; i < 5; i++) {
-                const celdas = carton.querySelectorAll(`.bingo-row .bingo-cell:nth-child(${i+1}):not(.free)`);
+                const celdas = carton.querySelectorAll(`.bingo-row .bingo-cell:nth-child(${i + 1}):not(.free)`);
                 const marcadas = Array.from(celdas).filter(c => c.classList.contains('marked'));
                 if (marcadas.length === 5) {
                     bingo = true;
                 }
             }
-            
-            // Verificar diagonales
+
             const diag1 = [
                 carton.querySelector('.bingo-row:nth-child(1) .bingo-cell:nth-child(1)'),
                 carton.querySelector('.bingo-row:nth-child(2) .bingo-cell:nth-child(2)'),
@@ -245,7 +229,7 @@
                 carton.querySelector('.bingo-row:nth-child(4) .bingo-cell:nth-child(4)'),
                 carton.querySelector('.bingo-row:nth-child(5) .bingo-cell:nth-child(5)')
             ].filter(c => c && !c.classList.contains('free'));
-            
+
             const diag2 = [
                 carton.querySelector('.bingo-row:nth-child(1) .bingo-cell:nth-child(5)'),
                 carton.querySelector('.bingo-row:nth-child(2) .bingo-cell:nth-child(4)'),
@@ -253,12 +237,12 @@
                 carton.querySelector('.bingo-row:nth-child(4) .bingo-cell:nth-child(2)'),
                 carton.querySelector('.bingo-row:nth-child(5) .bingo-cell:nth-child(1)')
             ].filter(c => c && !c.classList.contains('free'));
-            
-            if (diag1.every(c => c.classList.contains('marked')) || 
+
+            if (diag1.every(c => c.classList.contains('marked')) ||
                 diag2.every(c => c.classList.contains('marked'))) {
                 bingo = true;
             }
-            
+
             if (bingo) {
                 alert('¡BINGO!');
                 socket.emit('bingo_completado', {
@@ -268,37 +252,32 @@
             }
         }
 
-        // Salir de la sala
-        document.getElementById('salirSalaBtn').addEventListener('click', function() {
+        document.getElementById('salirSalaBtn').addEventListener('click', function () {
             socket.emit('salir_sala', { codigo_sala: codigoSala, username: username });
-            setTimeout(function() {
+            setTimeout(function () {
                 window.location.href = "/dashboard";
             }, 300);
         });
 
-        // Cuando se inicia la partida
         socket.on('partida_iniciada', (data) => {
             alert('🚀 ¡La partida ha comenzado!');
             document.getElementById('contenedor-numeros').style.display = 'block';
-            
             const contenedor = document.getElementById('contenedor-cartones');
             contenedor.innerHTML = '';
-            
-            // Mostrar solo el cartón del jugador actual
-            if (data.cartones[username]) {
-                const carton = data.cartones[username];
+
+            Object.keys(data.cartones).forEach(nombreJugador => {
+                const carton = data.cartones[nombreJugador];
                 const wrapper = document.createElement('div');
                 wrapper.className = 'bingo-card-wrapper';
-                
+
                 const title = document.createElement('div');
                 title.className = 'card-title';
-                title.textContent = 'Tu cartón';
+                title.textContent = nombreJugador === username ? 'Tu cartón' : `Cartón de ${nombreJugador}`;
                 wrapper.appendChild(title);
-                
+
                 const cardDiv = document.createElement('div');
                 cardDiv.className = 'bingo-card';
-                
-                // Crear encabezado B I N G O
+
                 const header = document.createElement('div');
                 header.className = 'bingo-header';
                 ['B', 'I', 'N', 'G', 'O'].forEach(letra => {
@@ -307,40 +286,42 @@
                     header.appendChild(letraDiv);
                 });
                 cardDiv.appendChild(header);
-                
-                // Crear filas del cartón
+
                 carton.forEach(fila => {
                     const filaDiv = document.createElement('div');
                     filaDiv.className = 'bingo-row';
-                    
+
                     fila.forEach((celda, index) => {
                         const celdaDiv = document.createElement('div');
                         celdaDiv.className = 'bingo-cell';
-                        
+
                         if (celda === "") {
                             celdaDiv.classList.add('free');
-                            celdaDiv.textContent = "FREE";
+                            celdaDiv.textContent = "";
                         } else {
                             celdaDiv.textContent = celda;
-                            celdaDiv.onclick = function() {
-                                marcarNumero(this, celda);
-                            };
+                            if (nombreJugador === username) {
+                                celdaDiv.onclick = function () {
+                                    marcarNumero(this, celda);
+                                };
+                            } else {
+                                celdaDiv.style.cursor = 'default';
+                            }
                         }
-                        
+
                         filaDiv.appendChild(celdaDiv);
                     });
-                    
+
                     cardDiv.appendChild(filaDiv);
                 });
-                
+
                 wrapper.appendChild(cardDiv);
                 contenedor.appendChild(wrapper);
-            }
-            
+            });
+
             btnListo.disabled = true;
         });
 
-        // Escuchar nuevos números
         socket.on('numero_nuevo', data => {
             const listaNumeros = document.getElementById('lista-numeros');
             const numeroDiv = document.createElement('div');
@@ -353,7 +334,6 @@
             alert('🎉 ¡Se han emitido todos los números! La partida ha terminado.');
         });
 
-        // Evento cuando otro jugador completa un bingo
         socket.on('bingo_ganador', data => {
             if (data.username !== username) {
                 alert(`🎉 ¡El jugador ${data.username} ha cantado BINGO!`);
@@ -361,4 +341,5 @@
         });
     </script>
 </body>
+
 </html>
