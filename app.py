@@ -1,7 +1,5 @@
 import eventlet
-eventlet.monkey_patch()# En esta parte se pone todo lo que queramos importar para luego usarlo en la aplicacion
-# render_template es para renderizar el html desde la carpeta templates que la usa por defecto
-# Flask es el framework que estamos usando para crear la aplicacion web
+eventlet.monkey_patch()
 
 from flask import Flask, render_template, redirect, url_for, request, flash, session
 from flask_socketio import SocketIO, emit, join_room, leave_room
@@ -234,6 +232,11 @@ def unirse_sala(data):
     if codigo_sala not in salas:
         salas[codigo_sala] = {'jugadores': [], 'listos': {}}
 
+    # ⚠️ Verificar que no haya más de 10 jugadores
+    if len(salas[codigo_sala]['jugadores']) >= 10:
+        emit('sala_llena', {'mensaje': 'La sala ya tiene 10 jugadores.'})
+        return
+
     if username not in salas[codigo_sala]['jugadores']:
         salas[codigo_sala]['jugadores'].append(username)
         salas[codigo_sala]['listos'][username] = False
@@ -241,6 +244,7 @@ def unirse_sala(data):
     join_room(codigo_sala)
 
     emit_actualizacion_jugadores(codigo_sala)
+
 
 def emit_actualizacion_jugadores(codigo_sala):
     emit('actualizar_jugadores_listos', {
