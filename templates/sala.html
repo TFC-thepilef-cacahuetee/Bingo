@@ -529,6 +529,38 @@
             alert('🎉 ¡Se han emitido todos los números! La partida ha terminado.');
             botonesAccion.style.display = 'none';
         });
+
+        // Nuevos listeners para manejar los eventos de cambio
+socket.on('cambio_a_bingo', () => {
+    modoLinea = false;
+    lineaCantada = true;
+    btnBingoLinea.textContent = 'Cantar Bingo';
+    btnBingoLinea.style.backgroundColor = '#4CAF50';
+    mostrarMensaje('info', '¡Alguien ha cantado línea! Ahora solo se puede cantar BINGO.');
+});
+
+socket.on('bingo_completado', data => {
+    if (data.username !== username) {
+        const mensaje = data.tipo === 'linea' 
+            ? `🎉 ¡${data.username} ha cantado LÍNEA! (${data.cantidad} línea(s))` 
+            : `🏆 ¡${data.username} ha cantado BINGO!`;
+        
+        mostrarMensaje('info', mensaje);
+        
+        if (data.tipo === 'linea' && !lineaCantada) {
+            modoLinea = false;
+            lineaCantada = true;
+            btnBingoLinea.textContent = 'Cantar Bingo';
+            btnBingoLinea.style.backgroundColor = '#4CAF50';
+        }
+    }
+});
+
+socket.on('intento_invalido', data => {
+    if (data.username !== username) {
+        mostrarMensaje('error', `❌ ${data.username} intentó cantar ${data.tipo.toUpperCase()} pero no era válido (${data.motivo})`);
+    }
+});
     </script>
 </body>
 </html>
