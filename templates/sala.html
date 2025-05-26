@@ -561,6 +561,18 @@ socket.on('intento_invalido', data => {
         mostrarMensaje('error', `❌ ${data.username} intentó cantar ${data.tipo.toUpperCase()} pero no era válido (${data.motivo})`);
     }
 });
+
+socket.emit('linea_cantada', { codigo_sala: codigoSala, username: username });
+
+socket.on('cambiar_a_bingo', (data) => {
+    // Aquí puedes usar data.username si quieres mostrar quién cantó línea
+    const botonLinea = document.getElementById('boton-linea');
+    if (botonLinea) {
+        botonLinea.textContent = 'Bingo!'; // Cambia el texto
+        botonLinea.disabled = false;       // Habilita el botón si estaba deshabilitado
+        // Opcional: cambiar estilos CSS para que se note que cambió
+    }
+});
     </script>
 </body>
 </html>
