@@ -400,6 +400,24 @@ def emitir_numeros_periodicos(codigo_sala):
 
 # Definimos la ruta de error 404, que es la que se carga cuando no se encuentra la pagina que se busca
 #app.register_error_handler(404, paginaNoEncontrada)
+@socketio.on('numero_marcado')
+def handle_numero_marcado(data):
+    """
+    Este evento recibe un número marcado por un jugador y lo reemite a todos los jugadores de la sala.
+    """
+    codigo_sala = data.get('codigo_sala')
+    username = data.get('username')
+    numero = data.get('numero')
+    marcado = data.get('marcado')
+
+    # Reenviar a todos en la sala, incluyendo al que lo marcó
+    socketio.emit('numero_marcado', {
+        'codigo_sala': codigo_sala,
+        'username': username,
+        'numero': numero,
+        'marcado': marcado
+    }, room=codigo_sala)
+
 
 if __name__ == '__main__':
     socketio.run(app, debug=True, port=5000)
