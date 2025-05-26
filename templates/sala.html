@@ -7,189 +7,191 @@
     <style>
         body {
             font-family: Arial, sans-serif;
-            background: #f3f3f3;
-            margin: 0;
-            padding: 0;
+            padding: 20px;
+            background: #f2f2f2;
         }
+
         .sala-container {
-            max-width: 900px;
-            margin: 30px auto;
-            background: #fff;
-            border-radius: 10px;
-            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
-            padding: 30px 40px 20px 40px;
+            background: white;
+            border-radius: 12px;
+            padding: 20px;
+            box-shadow: 0px 4px 10px rgba(0, 0, 0, 0.1);
+            max-width: 800px;
+            margin: 0 auto;
         }
-        h1, h2 {
-            text-align: center;
-        }
+
         .jugadores-lista {
-            display: flex;
-            flex-wrap: wrap;
-            justify-content: center;
-            margin-bottom: 20px;
+            margin-top: 20px;
         }
+
         .jugador {
-            background: #e7e7e7;
-            border-radius: 5px;
-            padding: 8px 16px;
-            margin: 6px;
-            font-size: 1.1em;
+            padding: 10px;
+            margin-bottom: 8px;
+            background: #e9e9e9;
+            border-radius: 8px;
         }
-        #btnListo, #salirSalaBtn, #btnAccion {
-            margin: 10px;
-            padding: 10px 24px;
-            font-size: 1em;
+
+        button {
+            padding: 10px 20px;
+            background-color: #4CAF50;
+            color: white;
             border: none;
-            border-radius: 5px;
+            border-radius: 8px;
             cursor: pointer;
+            margin: 5px;
         }
-        #btnListo {
-            background: #4caf50;
-            color: #fff;
+
+        button:disabled {
+            background-color: #cccccc;
         }
-        #salirSalaBtn {
-            background: #e74c3c;
-            color: #fff;
-        }
-        #btnAccion {
-            background: #2980b9;
-            color: #fff;
-        }
-        #btnAccion:disabled {
-            background: #b2bec3;
-            cursor: not-allowed;
-        }
-        .mensaje-validacion {
-            text-align: center;
-            margin: 10px 0;
-            font-weight: bold;
-        }
-        .mensaje-exito {
-            color: #27ae60;
-        }
-        .mensaje-error {
-            color: #c0392b;
-        }
+
         .bingo-container {
             display: flex;
             flex-wrap: wrap;
+            gap: 20px;
             justify-content: center;
+            padding: 20px;
         }
+
         .bingo-card-wrapper {
-            margin: 18px;
-            background: #f8f8f8;
-            border-radius: 8px;
-            box-shadow: 0 1px 7px rgba(0,0,0,0.10);
-            padding: 18px 14px 12px 14px;
-            min-width: 220px;
-        }
-        .card-title {
+            margin: 15px;
             text-align: center;
+        }
+
+        .card-title {
+            font-size: 1.2rem;
             font-weight: bold;
             margin-bottom: 10px;
+            color: #333;
         }
+
         .bingo-card {
-            display: flex;
-            flex-direction: column;
-            align-items: center;
+            border: 2px solid #333;
+            border-radius: 10px;
+            overflow: hidden;
+            box-shadow: 0 4px 10px rgba(0, 0, 0, 0.2);
+            width: 280px;
+            background-color: #fefefe;
+            font-family: 'Arial', sans-serif;
         }
+
         .bingo-header {
             display: flex;
-            justify-content: center;
-            margin-bottom: 3px;
-        }
-        .bingo-header div {
-            width: 34px;
-            height: 34px;
-            background: #3498db;
-            color: #fff;
+            background-color: #6a5acd;
+            color: white;
             font-weight: bold;
-            font-size: 1.2em;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            margin: 1px;
-            border-radius: 5px;
+            justify-content: space-around;
+            padding: 10px 0;
+            font-size: 1.2rem;
         }
+
         .bingo-row {
             display: flex;
         }
+
         .bingo-cell {
-            width: 34px;
-            height: 34px;
-            background: #fff;
-            border: 1px solid #dfe6e9;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            margin: 1px;
-            font-size: 1.1em;
+            flex: 1;
+            border: 1px solid #ccc;
+            text-align: center;
+            padding: 15px 0;
+            font-size: 1.1rem;
             cursor: pointer;
-            border-radius: 5px;
-            transition: background 0.2s;
+            transition: background-color 0.3s;
         }
-        .bingo-cell.marked {
-            background: #fdcb6e;
-            color: #222;
-            font-weight: bold;
-        }
-        .bingo-cell.marked-otro {
-            background: #b2bec3;
-            color: #222;
-        }
+
         .bingo-cell.free {
-            background: #636e72;
-            color: #fff;
+            background-color: #dcdcdc;
             font-weight: bold;
-            cursor: default;
+            color: #444;
         }
-        .bingo-cell.linea-completa {
-            background: #00b894 !important;
-            color: #fff !important;
+
+        .bingo-cell.marked {
+            background-color: #a5d6a7;
+            font-weight: bold;
         }
+
+        .bingo-cell.marked-otro {
+            background-color: #ffcc80;
+            font-weight: bold;
+        }
+
         .numeros-container {
-            margin: 20px auto;
-            max-width: 540px;
-            background: #f1f2f6;
-            border-radius: 8px;
-            padding: 12px 10px;
-        }
-        .numeros-titulo {
-            font-weight: bold;
-            margin-bottom: 8px;
+            background-color: #f8f8f8;
+            border-radius: 10px;
+            padding: 15px;
+            margin-top: 20px;
             text-align: center;
         }
+
+        .numeros-titulo {
+            font-size: 1.3rem;
+            margin-bottom: 10px;
+            color: #6a5acd;
+        }
+
         .numeros-lista {
             display: flex;
             flex-wrap: wrap;
             justify-content: center;
+            gap: 8px;
         }
+
         .numero-bola {
-            width: 32px;
-            height: 32px;
-            background: #0984e3;
-            color: #fff;
-            font-weight: bold;
-            font-size: 1.05em;
+            width: 40px;
+            height: 40px;
+            border-radius: 50%;
+            background-color: #6a5acd;
+            color: white;
             display: flex;
             align-items: center;
             justify-content: center;
-            margin: 2px;
-            border-radius: 50%;
+            font-weight: bold;
         }
-        @media (max-width: 700px) {
-            .sala-container {
-                padding: 12px 2vw;
-            }
-            .bingo-card-wrapper {
-                min-width: 170px;
-                padding: 10px 4px 6px 4px;
-            }
-            .bingo-header div, .bingo-cell {
-                width: 26px;
-                height: 26px;
-                font-size: 1em;
-            }
+
+        .botones-accion {
+            text-align: center;
+            margin: 20px 0;
+        }
+
+        #btnLinea {
+            background-color: #FFA500;
+            padding: 12px 25px;
+            font-size: 1.1rem;
+        }
+
+        #btnBingo {
+            background-color: #4CAF50;
+            padding: 12px 25px;
+            font-size: 1.1rem;
+            margin-left: 10px;
+        }
+
+        .botones-accion button:disabled {
+            opacity: 0.6;
+            cursor: not-allowed;
+        }
+
+        .mensaje-validacion {
+            margin-top: 10px;
+            padding: 10px;
+            border-radius: 5px;
+            font-weight: bold;
+            text-align: center;
+        }
+
+        .mensaje-exito {
+            background-color: #dff0d8;
+            color: #3c763d;
+        }
+
+        .mensaje-error {
+            background-color: #f2dede;
+            color: #a94442;
+        }
+
+        .linea-completa {
+            background-color: #ffeb3b;
+            box-shadow: 0 0 10px gold;
         }
     </style>
 </head>
@@ -203,7 +205,8 @@
         <button id="salirSalaBtn">Salir de la Sala ❌</button>
 
         <div id="botonesAccion" class="botones-accion" style="display: none;">
-            <button id="btnAccion">Cantar Línea</button>
+            <button id="btnLinea">Cantar Línea</button>
+            <button id="btnBingo">Cantar Bingo</button>
         </div>
         <div id="mensajeValidacion" class="mensaje-validacion"></div>
 
@@ -223,10 +226,9 @@
         // Variables globales
         let numerosSalidos = [];
         const botonesAccion = document.getElementById('botonesAccion');
-        const btnAccion = document.getElementById('btnAccion');
+        const btnLinea = document.getElementById('btnLinea');
+        const btnBingo = document.getElementById('btnBingo');
         const mensajeValidacion = document.getElementById('mensajeValidacion');
-        let estadoBoton = 'linea'; // 'linea' o 'bingo'
-        let lineaCantada = false;
 
         socket.emit('unirse_sala', { codigo_sala: codigoSala, username: username });
 
@@ -259,31 +261,73 @@
                 username: username
             });
 
-            actualizarEstadoBoton();
+            actualizarEstadoBotones();
         }
 
         function verificarNumerosMarcados(carton) {
             const celdasMarcadas = carton.querySelectorAll('.bingo-cell.marked:not(.free)');
             const numerosMarcados = Array.from(celdasMarcadas).map(celda => parseInt(celda.textContent));
+            
             const todosSalidos = numerosMarcados.every(numero => numerosSalidos.includes(numero));
+            
             return {
                 todosSalidos,
                 numerosMarcados
             };
         }
 
-        // Solo verifica líneas horizontales
-        function verificarLineaHorizontal(carton) {
+        function verificarLineasCompletas(carton) {
             const filas = carton.querySelectorAll('.bingo-row');
-            for (let fila of filas) {
+            let lineasCompletas = 0;
+            
+            // Verificar filas horizontales
+            filas.forEach(fila => {
                 const celdas = fila.querySelectorAll('.bingo-cell:not(.free)');
                 const todasMarcadas = Array.from(celdas).every(c => c.classList.contains('marked'));
-                if (celdas.length > 0 && todasMarcadas) {
+                if (todasMarcadas) {
+                    lineasCompletas++;
                     resaltarLinea(celdas);
-                    return true;
+                }
+            });
+            
+            // Verificar columnas verticales
+            for (let col = 1; col <= 5; col++) {
+                const celdas = carton.querySelectorAll(`.bingo-row .bingo-cell:nth-child(${col}):not(.free)`);
+                const todasMarcadas = Array.from(celdas).every(c => c.classList.contains('marked'));
+                if (todasMarcadas) {
+                    lineasCompletas++;
+                    resaltarLinea(celdas);
                 }
             }
-            return false;
+            
+            // Verificar diagonales
+            const diag1 = [
+                carton.querySelector('.bingo-row:nth-child(1) .bingo-cell:nth-child(1)'),
+                carton.querySelector('.bingo-row:nth-child(2) .bingo-cell:nth-child(2)'),
+                carton.querySelector('.bingo-row:nth-child(3) .bingo-cell:nth-child(3)'),
+                carton.querySelector('.bingo-row:nth-child(4) .bingo-cell:nth-child(4)'),
+                carton.querySelector('.bingo-row:nth-child(5) .bingo-cell:nth-child(5)')
+            ].filter(c => c && !c.classList.contains('free'));
+            
+            const diag2 = [
+                carton.querySelector('.bingo-row:nth-child(1) .bingo-cell:nth-child(5)'),
+                carton.querySelector('.bingo-row:nth-child(2) .bingo-cell:nth-child(4)'),
+                carton.querySelector('.bingo-row:nth-child(3) .bingo-cell:nth-child(3)'),
+                carton.querySelector('.bingo-row:nth-child(4) .bingo-cell:nth-child(2)'),
+                carton.querySelector('.bingo-row:nth-child(5) .bingo-cell:nth-child(1)')
+            ].filter(c => c && !c.classList.contains('free'));
+            
+            if (diag1.every(c => c.classList.contains('marked'))) {
+                lineasCompletas++;
+                resaltarLinea(diag1);
+            }
+            
+            if (diag2.every(c => c.classList.contains('marked'))) {
+                lineasCompletas++;
+                resaltarLinea(diag2);
+            }
+            
+            return lineasCompletas;
         }
 
         function resaltarLinea(celdas) {
@@ -300,59 +344,72 @@
         function mostrarMensaje(tipo, mensaje) {
             mensajeValidacion.textContent = mensaje;
             mensajeValidacion.className = 'mensaje-validacion';
+            
             if (tipo === 'exito') {
                 mensajeValidacion.classList.add('mensaje-exito');
             } else {
                 mensajeValidacion.classList.add('mensaje-error');
             }
+            
             setTimeout(() => {
                 mensajeValidacion.textContent = '';
                 mensajeValidacion.className = 'mensaje-validacion';
             }, 5000);
         }
 
-        function actualizarEstadoBoton() {
+        function actualizarEstadoBotones() {
             const carton = document.querySelector('.bingo-card-wrapper[data-jugador="' + username + '"] .bingo-card');
             if (!carton) return;
+            
             const marcados = carton.querySelectorAll('.bingo-cell.marked:not(.free)').length;
-            btnAccion.disabled = marcados < 5;
+            btnLinea.disabled = marcados < 5;
+            btnBingo.disabled = marcados < 5;
         }
 
-        btnAccion.addEventListener('click', () => {
+        btnLinea.addEventListener('click', () => {
             const carton = document.querySelector('.bingo-card-wrapper[data-jugador="' + username + '"] .bingo-card');
             const { todosSalidos } = verificarNumerosMarcados(carton);
-
+            
             if (!todosSalidos) {
-                mostrarMensaje('error', `⚠️ No puedes cantar ${estadoBoton === 'linea' ? 'línea' : 'bingo'}. Hay números marcados que no han salido.`);
+                mostrarMensaje('error', '⚠️ No puedes cantar línea. Hay números marcados que no han salido.');
                 return;
             }
+            
+            const lineasCompletas = verificarLineasCompletas(carton);
+            
+            if (lineasCompletas > 0) {
+                mostrarMensaje('exito', '¡LÍNEA VÁLIDA! 🎉');
+                socket.emit('bingo_completado', {
+                    codigo_sala: codigoSala,
+                    username: username,
+                    tipo: 'linea',
+                    cantidad: lineasCompletas
+                });
+            } else {
+                mostrarMensaje('error', '⚠️ No tienes ninguna línea completa.');
+            }
+        });
 
-            if (estadoBoton === 'linea') {
-                if (verificarLineaHorizontal(carton)) {
-                    mostrarMensaje('exito', '¡LÍNEA VÁLIDA! 🎉');
-                    socket.emit('bingo_completado', {
-                        codigo_sala: codigoSala,
-                        username: username,
-                        tipo: 'linea'
-                    });
-                    estadoBoton = 'bingo';
-                    btnAccion.textContent = 'Cantar Bingo';
-                    lineaCantada = true;
-                } else {
-                    mostrarMensaje('error', '⚠️ No tienes ninguna línea horizontal completa.');
-                }
-            } else if (estadoBoton === 'bingo') {
-                if (verificarBingoCompleto(carton)) {
-                    mostrarMensaje('exito', '¡BINGO VÁLIDO! 🎉');
-                    socket.emit('bingo_completado', {
-                        codigo_sala: codigoSala,
-                        username: username,
-                        tipo: 'bingo'
-                    });
-                    btnAccion.disabled = true;
-                } else {
-                    mostrarMensaje('error', '⚠️ No tienes un bingo completo.');
-                }
+        btnBingo.addEventListener('click', () => {
+            const carton = document.querySelector('.bingo-card-wrapper[data-jugador="' + username + '"] .bingo-card');
+            const { todosSalidos } = verificarNumerosMarcados(carton);
+            
+            if (!todosSalidos) {
+                mostrarMensaje('error', '⚠️ No puedes cantar bingo. Hay números marcados que no han salido.');
+                return;
+            }
+            
+            const bingoCompleto = verificarBingoCompleto(carton);
+            
+            if (bingoCompleto) {
+                mostrarMensaje('exito', '¡BINGO VÁLIDO! 🎉');
+                socket.emit('bingo_completado', {
+                    codigo_sala: codigoSala,
+                    username: username,
+                    tipo: 'bingo'
+                });
+            } else {
+                mostrarMensaje('error', '⚠️ No tienes un bingo completo.');
             }
         });
 
@@ -368,6 +425,7 @@
             document.getElementById('contenedor-numeros').style.display = 'block';
             botonesAccion.style.display = 'block';
             numerosSalidos = [];
+            
             const contenedor = document.getElementById('contenedor-cartones');
             contenedor.innerHTML = '';
 
@@ -427,12 +485,7 @@
             });
 
             btnListo.disabled = true;
-            // Reinicia el botón de acción al iniciar partida
-            estadoBoton = 'linea';
-            btnAccion.textContent = 'Cantar Línea';
-            btnAccion.disabled = false;
-            lineaCantada = false;
-            actualizarEstadoBoton();
+            actualizarEstadoBotones();
         });
 
         socket.on('numero_nuevo', data => {
@@ -441,25 +494,22 @@
             numeroDiv.className = 'numero-bola';
             numeroDiv.textContent = data.numero;
             listaNumeros.appendChild(numeroDiv);
+            
             numerosSalidos.push(data.numero);
         });
 
         socket.on('bingo_ganador', data => {
-            if (data.tipo === 'linea') {
-                alert(`🎉 ¡El jugador ${data.username} ha cantado LÍNEA!`);
-                estadoBoton = 'bingo';
-                btnAccion.textContent = 'Cantar Bingo';
-                lineaCantada = true;
-            } else if (data.tipo === 'bingo') {
-                alert(`🎉 ¡El jugador ${data.username} ha cantado BINGO!`);
-                btnAccion.disabled = true;
+            if (data.username !== username) {
+                alert(`🎉 ¡El jugador ${data.username} ha cantado ${data.tipo === 'linea' ? 'LÍNEA' : 'BINGO'}!`);
             }
         });
 
         socket.on('numero_marcado', data => {
             const { numero, username: jugadorQueMarco } = data;
+
             document.querySelectorAll('.bingo-card-wrapper').forEach(wrapper => {
                 const jugadorCarton = wrapper.dataset.jugador;
+
                 if (jugadorCarton === jugadorQueMarco) {
                     const celdas = wrapper.querySelectorAll('.bingo-cell');
                     celdas.forEach(celda => {
@@ -473,7 +523,6 @@
 
         socket.on('fin_partida', () => {
             alert('🎉 ¡Se han emitido todos los números! La partida ha terminado.');
-            btnAccion.disabled = true;
             botonesAccion.style.display = 'none';
         });
     </script>
