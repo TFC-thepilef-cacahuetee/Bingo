@@ -153,17 +153,10 @@
             margin: 20px 0;
         }
 
-        #btnLinea {
+        #btnBingoLinea {
             background-color: #FFA500;
             padding: 12px 25px;
             font-size: 1.1rem;
-        }
-
-        #btnBingo {
-            background-color: #4CAF50;
-            padding: 12px 25px;
-            font-size: 1.1rem;
-            margin-left: 10px;
         }
 
         .botones-accion button:disabled {
@@ -205,8 +198,7 @@
         <button id="salirSalaBtn">Salir de la Sala ❌</button>
 
         <div id="botonesAccion" class="botones-accion" style="display: none;">
-            <button id="btnLinea">Cantar Línea</button>
-            <button id="btnBingo">Cantar Bingo</button>
+            <button id="btnBingoLinea">Cantar Línea</button>
         </div>
         <div id="mensajeValidacion" class="mensaje-validacion"></div>
 
@@ -225,9 +217,9 @@
 
         // Variables globales
         let numerosSalidos = [];
+        let modoLinea = true; // Comienza en modo línea
         const botonesAccion = document.getElementById('botonesAccion');
-        const btnLinea = document.getElementById('btnLinea');
-        const btnBingo = document.getElementById('btnBingo');
+        const btnBingoLinea = document.getElementById('btnBingoLinea');
         const mensajeValidacion = document.getElementById('mensajeValidacion');
 
         socket.emit('unirse_sala', { codigo_sala: codigoSala, username: username });
@@ -280,7 +272,7 @@
             const filas = carton.querySelectorAll('.bingo-row');
             let lineasCompletas = 0;
             
-            // Verificar filas horizontales
+            // Verificar solo filas horizontales (no columnas ni diagonales)
             filas.forEach(fila => {
                 const celdas = fila.querySelectorAll('.bingo-cell:not(.free)');
                 const todasMarcadas = Array.from(celdas).every(c => c.classList.contains('marked'));
@@ -289,43 +281,6 @@
                     resaltarLinea(celdas);
                 }
             });
-            
-            // Verificar columnas verticales
-            for (let col = 1; col <= 5; col++) {
-                const celdas = carton.querySelectorAll(`.bingo-row .bingo-cell:nth-child(${col}):not(.free)`);
-                const todasMarcadas = Array.from(celdas).every(c => c.classList.contains('marked'));
-                if (todasMarcadas) {
-                    lineasCompletas++;
-                    resaltarLinea(celdas);
-                }
-            }
-            
-            // Verificar diagonales
-            const diag1 = [
-                carton.querySelector('.bingo-row:nth-child(1) .bingo-cell:nth-child(1)'),
-                carton.querySelector('.bingo-row:nth-child(2) .bingo-cell:nth-child(2)'),
-                carton.querySelector('.bingo-row:nth-child(3) .bingo-cell:nth-child(3)'),
-                carton.querySelector('.bingo-row:nth-child(4) .bingo-cell:nth-child(4)'),
-                carton.querySelector('.bingo-row:nth-child(5) .bingo-cell:nth-child(5)')
-            ].filter(c => c && !c.classList.contains('free'));
-            
-            const diag2 = [
-                carton.querySelector('.bingo-row:nth-child(1) .bingo-cell:nth-child(5)'),
-                carton.querySelector('.bingo-row:nth-child(2) .bingo-cell:nth-child(4)'),
-                carton.querySelector('.bingo-row:nth-child(3) .bingo-cell:nth-child(3)'),
-                carton.querySelector('.bingo-row:nth-child(4) .bingo-cell:nth-child(2)'),
-                carton.querySelector('.bingo-row:nth-child(5) .bingo-cell:nth-child(1)')
-            ].filter(c => c && !c.classList.contains('free'));
-            
-            if (diag1.every(c => c.classList.contains('marked'))) {
-                lineasCompletas++;
-                resaltarLinea(diag1);
-            }
-            
-            if (diag2.every(c => c.classList.contains('marked'))) {
-                lineasCompletas++;
-                resaltarLinea(diag2);
-            }
             
             return lineasCompletas;
         }
@@ -362,54 +317,52 @@
             if (!carton) return;
             
             const marcados = carton.querySelectorAll('.bingo-cell.marked:not(.free)').length;
-            btnLinea.disabled = marcados < 5;
-            btnBingo.disabled = marcados < 5;
+            btnBingoLinea.disabled = marcados < 5;
         }
 
-        btnLinea.addEventListener('click', () => {
+        btnBingoLinea.addEventListener('click', () => {
             const carton = document.querySelector('.bingo-card-wrapper[data-jugador="' + username + '"] .bingo-card');
             const { todosSalidos } = verificarNumerosMarcados(carton);
             
             if (!todosSalidos) {
-                mostrarMensaje('error', '⚠️ No puedes cantar línea. Hay números marcados que no han salido.');
+                mostrarMensaje('error', '⚠️ No puedes cantar. Hay números marcados que no han salido.');
                 return;
             }
             
-            const lineasCompletas = verificarLineasCompletas(carton);
-            
-            if (lineasCompletas > 0) {
-                mostrarMensaje('exito', '¡LÍNEA VÁLIDA! 🎉');
-                socket.emit('bingo_completado', {
-                    codigo_sala: codigoSala,
-                    username: username,
-                    tipo: 'linea',
-                    cantidad: lineasCompletas
-                });
+            if (modoLinea) {
+                // Verificar solo líneas horizontales
+                const lineasCompletas = verificarLineasCompletas(carton);
+                
+                if (lineasCompletas > 0) {
+                    mostrarMensaje('exito', '¡LÍNEA VÁLIDA! 🎉');
+                    socket.emit('bingo_completado', {
+                        codigo_sala: codigoSala,
+                        username: username,
+                        tipo: 'linea',
+                        cantidad: lineasCompletas
+                    });
+                    
+                    // Cambiar a modo bingo después de cantar línea
+                    modoLinea = false;
+                    btnBingoLinea.textContent = 'Cantar Bingo';
+                    btnBingoLinea.style.backgroundColor = '#4CAF50';
+                } else {
+                    mostrarMensaje('error', '⚠️ No tienes ninguna línea horizontal completa.');
+                }
             } else {
-                mostrarMensaje('error', '⚠️ No tienes ninguna línea completa.');
-            }
-        });
-
-        btnBingo.addEventListener('click', () => {
-            const carton = document.querySelector('.bingo-card-wrapper[data-jugador="' + username + '"] .bingo-card');
-            const { todosSalidos } = verificarNumerosMarcados(carton);
-            
-            if (!todosSalidos) {
-                mostrarMensaje('error', '⚠️ No puedes cantar bingo. Hay números marcados que no han salido.');
-                return;
-            }
-            
-            const bingoCompleto = verificarBingoCompleto(carton);
-            
-            if (bingoCompleto) {
-                mostrarMensaje('exito', '¡BINGO VÁLIDO! 🎉');
-                socket.emit('bingo_completado', {
-                    codigo_sala: codigoSala,
-                    username: username,
-                    tipo: 'bingo'
-                });
-            } else {
-                mostrarMensaje('error', '⚠️ No tienes un bingo completo.');
+                // Verificar bingo completo
+                const bingoCompleto = verificarBingoCompleto(carton);
+                
+                if (bingoCompleto) {
+                    mostrarMensaje('exito', '¡BINGO VÁLIDO! 🎉');
+                    socket.emit('bingo_completado', {
+                        codigo_sala: codigoSala,
+                        username: username,
+                        tipo: 'bingo'
+                    });
+                } else {
+                    mostrarMensaje('error', '⚠️ No tienes un bingo completo.');
+                }
             }
         });
 
@@ -425,6 +378,11 @@
             document.getElementById('contenedor-numeros').style.display = 'block';
             botonesAccion.style.display = 'block';
             numerosSalidos = [];
+            
+            // Resetear a modo línea al comenzar nueva partida
+            modoLinea = true;
+            btnBingoLinea.textContent = 'Cantar Línea';
+            btnBingoLinea.style.backgroundColor = '#FFA500';
             
             const contenedor = document.getElementById('contenedor-cartones');
             contenedor.innerHTML = '';
@@ -501,6 +459,13 @@
         socket.on('bingo_ganador', data => {
             if (data.username !== username) {
                 alert(`🎉 ¡El jugador ${data.username} ha cantado ${data.tipo === 'linea' ? 'LÍNEA' : 'BINGO'}!`);
+                
+                // Si alguien cantó línea, cambiamos a modo bingo
+                if (data.tipo === 'linea') {
+                    modoLinea = false;
+                    btnBingoLinea.textContent = 'Cantar Bingo';
+                    btnBingoLinea.style.backgroundColor = '#4CAF50';
+                }
             }
         });
 
