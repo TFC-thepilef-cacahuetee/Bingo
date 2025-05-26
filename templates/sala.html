@@ -211,356 +211,69 @@
     <div id="contenedor-cartones" class="bingo-container"></div>
 
     <script>
-        const socket = io();
-        const codigoSala = "{{ codigo_sala }}";
-        const username = "{{ username }}";
+    const socket = io();
+    const btnBingoLinea = document.getElementById('btnBingoLinea');
+    const mensajeValidacion = document.getElementById('mensajeValidacion');
 
-        // Variables globales
-        let numerosSalidos = [];
-        let modoLinea = true; // Comienza en modo línea
-        let lineaCantada = false; // Para evitar múltiples cantos de línea
-        const botonesAccion = document.getElementById('botonesAccion');
-        const btnBingoLinea = document.getElementById('btnBingoLinea');
-        const mensajeValidacion = document.getElementById('mensajeValidacion');
+    let lineaCantada = false;
+    let modoLinea = true;
 
-        socket.emit('unirse_sala', { codigo_sala: codigoSala, username: username });
+    function mostrarMensaje(tipo, mensaje) {
+        mensajeValidacion.textContent = mensaje;
+        mensajeValidacion.className = 'mensaje-validacion';
 
-        const btnListo = document.getElementById('btnListo');
-        const jugadoresDiv = document.getElementById('jugadores');
-
-        btnListo.addEventListener('click', () => {
-            socket.emit('jugador_listo', { codigo_sala: codigoSala, username: username });
-            btnListo.disabled = true;
-        });
-
-        socket.on('actualizar_jugadores_listos', data => {
-            jugadoresDiv.innerHTML = '';
-            data.jugadores.forEach(jugador => {
-                const div = document.createElement('div');
-                div.className = 'jugador';
-                let estado = data.listos[jugador] ? '✅ Listo' : '❌ No listo';
-                div.textContent = `${jugador} - ${estado}`;
-                jugadoresDiv.appendChild(div);
-            });
-        });
-
-        function marcarNumero(celda, numero) {
-            celda.classList.toggle('marked');
-
-            socket.emit('numero_marcado', {
-                numero: numero,
-                marcado: celda.classList.contains('marked'),
-                codigo_sala: codigoSala,
-                username: username
-            });
-
-            actualizarEstadoBotones();
+        if (tipo === 'exito') {
+            mensajeValidacion.classList.add('mensaje-exito');
+        } else if (tipo === 'error') {
+            mensajeValidacion.classList.add('mensaje-error');
+        } else if (tipo === 'info') {
+            mensajeValidacion.style.backgroundColor = '#d9edf7';
+            mensajeValidacion.style.color = '#31708f';
+            mensajeValidacion.style.border = '1px solid #bce8f1';
         }
 
-        function verificarNumerosMarcados(carton) {
-            const celdasMarcadas = carton.querySelectorAll('.bingo-cell.marked:not(.free)');
-            const numerosMarcados = Array.from(celdasMarcadas).map(celda => parseInt(celda.textContent));
-            
-            const todosSalidos = numerosMarcados.every(numero => numerosSalidos.includes(numero));
-            
-            return {
-                todosSalidos,
-                numerosMarcados
-            };
-        }
-
-        function verificarLineasCompletas(carton) {
-            const filas = carton.querySelectorAll('.bingo-row');
-            let lineasCompletas = 0;
-            
-            // Verificar solo filas horizontales (no columnas ni diagonales)
-            filas.forEach(fila => {
-                const celdas = fila.querySelectorAll('.bingo-cell:not(.free)');
-                const todasMarcadas = Array.from(celdas).every(c => c.classList.contains('marked'));
-                if (todasMarcadas) {
-                    lineasCompletas++;
-                    resaltarLinea(celdas);
-                }
-            });
-            
-            return lineasCompletas;
-        }
-
-        function resaltarLinea(celdas) {
-            celdas.forEach(celda => {
-                if (celda) celda.classList.add('linea-completa');
-            });
-        }
-
-        function verificarBingoCompleto(carton) {
-            const todasCeldas = carton.querySelectorAll('.bingo-cell:not(.free)');
-            return Array.from(todasCeldas).every(c => c.classList.contains('marked'));
-        }
-
-        function mostrarMensaje(tipo, mensaje) {
-            mensajeValidacion.textContent = mensaje;
+        setTimeout(() => {
+            mensajeValidacion.textContent = '';
             mensajeValidacion.className = 'mensaje-validacion';
-            
-            if (tipo === 'exito') {
-                mensajeValidacion.classList.add('mensaje-exito');
-            } else {
-                mensajeValidacion.classList.add('mensaje-error');
-            }
-            
-            setTimeout(() => {
-                mensajeValidacion.textContent = '';
-                mensajeValidacion.className = 'mensaje-validacion';
-            }, 5000);
-        }
-
-        function actualizarEstadoBotones() {
-            const carton = document.querySelector('.bingo-card-wrapper[data-jugador="' + username + '"] .bingo-card');
-            if (!carton) return;
-            
-            const marcados = carton.querySelectorAll('.bingo-cell.marked:not(.free)').length;
-            btnBingoLinea.disabled = marcados < 5;
-        }
-
-        btnBingoLinea.addEventListener('click', () => {
-            const carton = document.querySelector('.bingo-card-wrapper[data-jugador="' + username + '"] .bingo-card');
-            const { todosSalidos, numerosMarcados } = verificarNumerosMarcados(carton);
-            
-            if (!todosSalidos) {
-                mostrarMensaje('error', '⚠️ No puedes cantar. Hay números marcados que no han salido.');
-                
-                socket.emit('intento_invalido', {
-                    codigo_sala: codigoSala,
-                    username: username,
-                    tipo: modoLinea ? 'linea' : 'bingo',
-                    valido: false,
-                    motivo: 'Números no salidos: ' + numerosMarcados.filter(n => !numerosSalidos.includes(n)).join(', ')
-                });
-                
-                return;
-            }
-            
-            if (modoLinea) {
-                // Verificar solo líneas horizontales
-                const lineasCompletas = verificarLineasCompletas(carton);
-                
-                if (lineasCompletas > 0) {
-                    mostrarMensaje('exito', '¡LÍNEA VÁLIDA! 🎉');
-                    socket.emit('bingo_completado', {
-                        codigo_sala: codigoSala,
-                        username: username,
-                        tipo: 'linea',
-                        cantidad: lineasCompletas,
-                        valido: true
-                    });
-                    
-                    // Cambiar a modo bingo después de cantar línea
-                    modoLinea = false;
-                    lineaCantada = true;
-                    btnBingoLinea.textContent = 'Cantar Bingo';
-                    btnBingoLinea.style.backgroundColor = '#4CAF50';
-
-                    // Notificar a todos que cambien a modo bingo
-                    socket.emit('cambio_a_bingo', { codigo_sala: codigoSala });
-                } else {
-                    mostrarMensaje('error', '⚠️ No tienes ninguna línea horizontal completa.');
-                    socket.emit('intento_invalido', {
-                        codigo_sala: codigoSala,
-                        username: username,
-                        tipo: 'linea',
-                        valido: false,
-                        motivo: 'No hay línea horizontal completa'
-                    });
-                }
-            } else {
-                // Verificar bingo completo
-                const bingoCompleto = verificarBingoCompleto(carton);
-                
-                if (bingoCompleto) {
-                    mostrarMensaje('exito', '¡BINGO VÁLIDO! 🎉');
-                    socket.emit('bingo_completado', {
-                        codigo_sala: codigoSala,
-                        username: username,
-                        tipo: 'bingo',
-                        valido: true
-                    });
-                } else {
-                    mostrarMensaje('error', '⚠️ No tienes un bingo completo.');
-                    socket.emit('intento_invalido', {
-                        codigo_sala: codigoSala,
-                        username: username,
-                        tipo: 'bingo',
-                        valido: false,
-                        motivo: 'Cartón no completo'
-                    });
-                }
-            }
-        });
-
-        // Nuevos listeners para manejar los eventos de cambi
-        socket.on('cambio_a_bingo', () => {
-            modoLinea = false;
-            lineaCantada = true;
-            btnBingoLinea.textContent = 'Cantar Bingo';
-            btnBingoLinea.style.backgroundColor = '#4CAF50';
-            mostrarMensaje('info', '¡Alguien ha cantado línea! Ahora solo se puede cantar BINGO.');
-        });
-
-        document.getElementById('salirSalaBtn').addEventListener('click', function() {
-            socket.emit('salir_sala', { codigo_sala: codigoSala, username: username });
-            setTimeout(function() {
-                window.location.href = "/dashboard";
-            }, 300);
-        });
-
-        socket.on('partida_iniciada', (data) => {
-            alert('🚀 ¡La partida ha comenzado!');
-            document.getElementById('contenedor-numeros').style.display = 'block';
-            botonesAccion.style.display = 'block';
-            numerosSalidos = [];
-            
-            // Resetear a modo línea al comenzar nueva partida
-            modoLinea = true;
-            btnBingoLinea.textContent = 'Cantar Línea';
-            btnBingoLinea.style.backgroundColor = '#FFA500';
-            
-            const contenedor = document.getElementById('contenedor-cartones');
-            contenedor.innerHTML = '';
-
-            Object.keys(data.cartones).forEach(nombreJugador => {
-                const carton = data.cartones[nombreJugador];
-                const wrapper = document.createElement('div');
-                wrapper.className = 'bingo-card-wrapper';
-                wrapper.dataset.jugador = nombreJugador;
-
-                const title = document.createElement('div');
-                title.className = 'card-title';
-                title.textContent = nombreJugador === username ? 'Tu cartón' : `Cartón de ${nombreJugador}`;
-                wrapper.appendChild(title);
-
-                const cardDiv = document.createElement('div');
-                cardDiv.className = 'bingo-card';
-
-                const header = document.createElement('div');
-                header.className = 'bingo-header';
-                ['B', 'I', 'N', 'G', 'O'].forEach(letra => {
-                    const letraDiv = document.createElement('div');
-                    letraDiv.textContent = letra;
-                    header.appendChild(letraDiv);
-                });
-                cardDiv.appendChild(header);
-
-                carton.forEach(fila => {
-                    const filaDiv = document.createElement('div');
-                    filaDiv.className = 'bingo-row';
-
-                    fila.forEach((celda, index) => {
-                        const celdaDiv = document.createElement('div');
-                        celdaDiv.className = 'bingo-cell';
-
-                        if (celda === "") {
-                            celdaDiv.classList.add('free');
-                            celdaDiv.textContent = "";
-                        } else {
-                            celdaDiv.textContent = celda;
-                            if (nombreJugador === username) {
-                                celdaDiv.onclick = function() {
-                                    marcarNumero(this, celda);
-                                };
-                            } else {
-                                celdaDiv.style.cursor = 'default';
-                            }
-                        }
-
-                        filaDiv.appendChild(celdaDiv);
-                    });
-
-                    cardDiv.appendChild(filaDiv);
-                });
-
-                wrapper.appendChild(cardDiv);
-                contenedor.appendChild(wrapper);
-            });
-
-            btnListo.disabled = true;
-            actualizarEstadoBotones();
-        });
-
-        socket.on('numero_nuevo', data => {
-            const listaNumeros = document.getElementById('lista-numeros');
-            const numeroDiv = document.createElement('div');
-            numeroDiv.className = 'numero-bola';
-            numeroDiv.textContent = data.numero;
-            listaNumeros.appendChild(numeroDiv);
-            
-            numerosSalidos.push(data.numero);
-        });
-
-        socket.on('bingo_ganador', data => {
-            if (data.username !== username) {
-                alert(`🎉 ¡El jugador ${data.username} ha cantado ${data.tipo === 'linea' ? 'LÍNEA' : 'BINGO'}!`);
-                
-                // Si alguien cantó línea, cambiamos a modo bingo
-                if (data.tipo === 'linea') {
-                    modoLinea = false;
-                    btnBingoLinea.textContent = 'Cantar Bingo';
-                    btnBingoLinea.style.backgroundColor = '#4CAF50';
-                }
-            }
-        });
-
-        socket.on('numero_marcado', data => {
-            const { numero, username: jugadorQueMarco } = data;
-
-            document.querySelectorAll('.bingo-card-wrapper').forEach(wrapper => {
-                const jugadorCarton = wrapper.dataset.jugador;
-
-                if (jugadorCarton === jugadorQueMarco) {
-                    const celdas = wrapper.querySelectorAll('.bingo-cell');
-                    celdas.forEach(celda => {
-                        if (celda.textContent == numero && !celda.classList.contains('marked')) {
-                            celda.classList.add('marked-otro');
-                        }
-                    });
-                }
-            });
-        });
-
-        socket.on('fin_partida', () => {
-            alert('🎉 ¡Se han emitido todos los números! La partida ha terminado.');
-            botonesAccion.style.display = 'none';
-        });
-
-        // Nuevos listeners para manejar los eventos de cambio
-socket.on('cambio_a_bingo', () => {
-    modoLinea = false;
-    lineaCantada = true;
-    btnBingoLinea.textContent = 'Cantar Bingo';
-    btnBingoLinea.style.backgroundColor = '#4CAF50';
-    mostrarMensaje('info', '¡Alguien ha cantado línea! Ahora solo se puede cantar BINGO.');
-});
-
-socket.on('bingo_completado', data => {
-    if (data.username !== username) {
-        const mensaje = data.tipo === 'linea' 
-            ? `🎉 ¡${data.username} ha cantado LÍNEA! (${data.cantidad} línea(s))` 
-            : `🏆 ¡${data.username} ha cantado BINGO!`;
-        
-        mostrarMensaje('info', mensaje);
-        
-        if (data.tipo === 'linea' && !lineaCantada) {
-            modoLinea = false;
-            lineaCantada = true;
-            btnBingoLinea.textContent = 'Cantar Bingo';
-            btnBingoLinea.style.backgroundColor = '#4CAF50';
-        }
+            mensajeValidacion.removeAttribute('style');
+        }, 5000);
     }
-});
 
-socket.on('intento_invalido', data => {
-    if (data.username !== username) {
-        mostrarMensaje('error', `❌ ${data.username} intentó cantar ${data.tipo.toUpperCase()} pero no era válido (${data.motivo})`);
-    }
-});
-    </script>
+    btnBingoLinea.addEventListener('click', () => {
+        if (modoLinea && !lineaCantada) {
+            socket.emit('bingo_linea');
+        } else if (!modoLinea) {
+            socket.emit('bingo_completo');
+        }
+    });
+
+    socket.on('bingo_ganador', (nombreGanador) => {
+        mostrarMensaje('exito', `¡${nombreGanador} ha ganado el bingo!`);
+        btnBingoLinea.disabled = true;
+    });
+
+    socket.on('bingo_incorrecto', () => {
+        mostrarMensaje('error', '¡La jugada no es válida!');
+    });
+
+    socket.on('bingo_linea_valido', (nombreJugador) => {
+        mostrarMensaje('exito', `¡${nombreJugador} ha cantado línea correctamente! Ahora solo se puede cantar BINGO.`);
+        socket.emit('cambio_a_bingo'); // Avisa al servidor que cambie de modo
+    });
+
+    socket.on('cambio_a_bingo', () => {
+        modoLinea = false;
+        lineaCantada = true;
+        btnBingoLinea.textContent = 'Cantar Bingo';
+        btnBingoLinea.style.backgroundColor = '#4CAF50';
+        mostrarMensaje('info', '¡Alguien ha cantado LÍNEA! Ahora solo se puede cantar BINGO.');
+    });
+
+    socket.on('bingo_completado', (nombreJugador) => {
+        mostrarMensaje('exito', `¡${nombreJugador} ha cantado BINGO correctamente!`);
+        btnBingoLinea.disabled = true;
+    });
+</script>
+
 </body>
 </html>
