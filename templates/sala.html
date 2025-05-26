@@ -17,7 +17,7 @@
             border-radius: 12px;
             padding: 20px;
             box-shadow: 0px 4px 10px rgba(0, 0, 0, 0.1);
-            max-width: 600px;
+            max-width: 800px;
             margin: 0 auto;
         }
 
@@ -39,13 +39,14 @@
             border: none;
             border-radius: 8px;
             cursor: pointer;
+            margin: 5px;
         }
 
         button:disabled {
             background-color: #cccccc;
         }
 
-        /* Estilos para los cartones de bingo */
+        /* Nuevos estilos para los cartones de bingo */
         .bingo-container {
             display: flex;
             flex-wrap: wrap;
@@ -54,15 +55,26 @@
             padding: 20px;
         }
 
+        .bingo-card-wrapper {
+            margin: 15px;
+            text-align: center;
+        }
+
+        .card-title {
+            font-size: 1.2rem;
+            font-weight: bold;
+            margin-bottom: 10px;
+            color: #333;
+        }
+
         .bingo-card {
             border: 2px solid #333;
             border-radius: 10px;
             overflow: hidden;
             box-shadow: 0 4px 10px rgba(0, 0, 0, 0.2);
-            width: 300px;
+            width: 280px;
             background-color: #fefefe;
             font-family: 'Arial', sans-serif;
-            margin-bottom: 20px;
         }
 
         .bingo-header {
@@ -85,12 +97,53 @@
             text-align: center;
             padding: 15px 0;
             font-size: 1.1rem;
+            cursor: pointer;
+            transition: background-color 0.3s;
         }
 
         .bingo-cell.free {
             background-color: #dcdcdc;
             font-weight: bold;
             color: #444;
+        }
+
+        .bingo-cell.marked {
+            background-color: #a5d6a7; /* Verde claro */
+            font-weight: bold;
+        }
+
+        /* Estilos para los números salidos */
+        .numeros-container {
+            background-color: #f8f8f8;
+            border-radius: 10px;
+            padding: 15px;
+            margin-top: 20px;
+            text-align: center;
+        }
+
+        .numeros-titulo {
+            font-size: 1.3rem;
+            margin-bottom: 10px;
+            color: #6a5acd;
+        }
+
+        .numeros-lista {
+            display: flex;
+            flex-wrap: wrap;
+            justify-content: center;
+            gap: 8px;
+        }
+
+        .numero-bola {
+            width: 40px;
+            height: 40px;
+            border-radius: 50%;
+            background-color: #6a5acd;
+            color: white;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-weight: bold;
         }
     </style>
 </head>
@@ -106,26 +159,29 @@
         <button id="btnListo">Estoy Listo ✅</button>
         <button id="salirSalaBtn">Salir de la Sala ❌</button>
 
+        <!-- Contenedor para números salidos -->
+        <div id="contenedor-numeros" class="numeros-container" style="display: none;">
+            <div class="numeros-titulo">Números salidos:</div>
+            <div id="lista-numeros" class="numeros-lista"></div>
+        </div>
     </div>
-    <div id="contenedor-cartones" style="margin-top: 30px;"></div>
-
+    
+    <div id="contenedor-cartones" class="bingo-container"></div>
 
     <script>
         const socket = io();
         const codigoSala = "{{ codigo_sala }}";
         const username = "{{ username }}";
 
-
         socket.emit('unirse_sala', { codigo_sala: codigoSala, username: username });
 
         const btnListo = document.getElementById('btnListo');
-        const btnEmpezar = document.getElementById('empezarPartidaBtn');
         const jugadoresDiv = document.getElementById('jugadores');
 
         // Cuando el jugador presiona "Estoy Listo"
         btnListo.addEventListener('click', () => {
             socket.emit('jugador_listo', { codigo_sala: codigoSala, username: username });
-            btnListo.disabled = true;  // Para que no pueda pulsar más de una vez
+            btnListo.disabled = true;
         });
 
         // Actualizar lista con estado "listo"
@@ -140,221 +196,176 @@
 
                 jugadoresDiv.appendChild(div);
             });
-
-            // Botón empezar partida solo activado si todos están listos y al menos 2 jugadores
-            const todosListos = Object.values(data.listos).every(v => v === true);
-            btnEmpezar.disabled = !(todosListos && data.jugadores.length >= 2);
         });
 
-        socket.on('partida_iniciada', (data) => {
-            alert('🚀 ¡La partida ha comenzado!');
-
-            const contenedor = document.getElementById('contenedor-cartones');
-            contenedor.innerHTML = ''; // Limpiar
-
-            const cartones = data.cartones; // { jugador: cartón, ... }
-
-            // Usar un div con clase bingo-container para envolver los cartones
-            const bingoContainer = document.createElement('div');
-            bingoContainer.className = 'bingo-container';
-
-            Object.entries(cartones).forEach(([jugador, carton]) => {
-                const cardDiv = document.createElement('div');
-                cardDiv.className = 'bingo-card';
-
-                const header = document.createElement('div');
-                header.className = 'bingo-header';
-
-                // Letras B I N G O
-                ['B', 'I', 'N', 'G', 'O'].forEach(letra => {
-                    const letraDiv = document.createElement('div');
-                    letraDiv.textContent = letra;
-                    letraDiv.style.flex = '1';
-                    header.appendChild(letraDiv);
-                });
-
-                cardDiv.appendChild(header);
-
-                // Las filas del carton
-                carton.forEach((fila, i) => {
-                    const filaDiv = document.createElement('div');
-                    filaDiv.className = 'bingo-row';
-
-                    fila.forEach((celda, j) => {
-                        const celdaDiv = document.createElement('div');
-                        celdaDiv.className = 'bingo-cell';
-
-                        if (celda === "") {
-                            celdaDiv.classList.add('free');
-                            celdaDiv.textContent = "Libre";
-                        } else {
-                            celdaDiv.textContent = celda;
-                        }
-
-                        filaDiv.appendChild(celdaDiv);
-                    });
-
-                    cardDiv.appendChild(filaDiv);
-                });
-
-                // Nombre del jugador arriba o abajo
-                const nombreJugador = document.createElement('h3');
-                nombreJugador.style.textAlign = 'center';
-                nombreJugador.textContent = jugador;
-
-                // Insertar nombre antes del header o al final
-                cardDiv.insertBefore(nombreJugador, header);
-
-                bingoContainer.appendChild(cardDiv);
+        // Función para marcar/desmarcar números
+        function marcarNumero(celda, numero) {
+            celda.classList.toggle('marked');
+            
+            // Opcional: Enviar al servidor que este número fue marcado
+            socket.emit('numero_marcado', {
+                numero: numero,
+                marcado: celda.classList.contains('marked'),
+                codigo_sala: codigoSala,
+                username: username
             });
+            
+            // Verificar si hay bingo
+            verificarBingo(celda.closest('.bingo-card'));
+        }
 
-            contenedor.appendChild(bingoContainer);
+        // Función para verificar líneas o bingo completo
+        function verificarBingo(carton) {
+            const filas = carton.querySelectorAll('.bingo-row');
+            let bingo = false;
+            
+            // Verificar filas
+            filas.forEach(fila => {
+                const celdas = fila.querySelectorAll('.bingo-cell:not(.free)');
+                const marcadas = Array.from(celdas).filter(c => c.classList.contains('marked'));
+                if (marcadas.length === 5) {
+                    bingo = true;
+                }
+            });
+            
+            // Verificar columnas
+            for (let i = 0; i < 5; i++) {
+                const celdas = carton.querySelectorAll(`.bingo-row .bingo-cell:nth-child(${i+1}):not(.free)`);
+                const marcadas = Array.from(celdas).filter(c => c.classList.contains('marked'));
+                if (marcadas.length === 5) {
+                    bingo = true;
+                }
+            }
+            
+            // Verificar diagonales
+            const diag1 = [
+                carton.querySelector('.bingo-row:nth-child(1) .bingo-cell:nth-child(1)'),
+                carton.querySelector('.bingo-row:nth-child(2) .bingo-cell:nth-child(2)'),
+                carton.querySelector('.bingo-row:nth-child(3) .bingo-cell:nth-child(3)'),
+                carton.querySelector('.bingo-row:nth-child(4) .bingo-cell:nth-child(4)'),
+                carton.querySelector('.bingo-row:nth-child(5) .bingo-cell:nth-child(5)')
+            ].filter(c => c && !c.classList.contains('free'));
+            
+            const diag2 = [
+                carton.querySelector('.bingo-row:nth-child(1) .bingo-cell:nth-child(5)'),
+                carton.querySelector('.bingo-row:nth-child(2) .bingo-cell:nth-child(4)'),
+                carton.querySelector('.bingo-row:nth-child(3) .bingo-cell:nth-child(3)'),
+                carton.querySelector('.bingo-row:nth-child(4) .bingo-cell:nth-child(2)'),
+                carton.querySelector('.bingo-row:nth-child(5) .bingo-cell:nth-child(1)')
+            ].filter(c => c && !c.classList.contains('free'));
+            
+            if (diag1.every(c => c.classList.contains('marked')) || 
+                diag2.every(c => c.classList.contains('marked'))) {
+                bingo = true;
+            }
+            
+            if (bingo) {
+                alert('¡BINGO!');
+                socket.emit('bingo_completado', {
+                    codigo_sala: codigoSala,
+                    username: username
+                });
+            }
+        }
 
-            btnListo.disabled = true;
-        });
-
-
-        document.getElementById('salirSalaBtn').addEventListener('click', function () {
-            console.log("Botón salir presionado");
-            console.log("Saliendo de sala:", codigoSala, username);
+        // Salir de la sala
+        document.getElementById('salirSalaBtn').addEventListener('click', function() {
             socket.emit('salir_sala', { codigo_sala: codigoSala, username: username });
-
-            setTimeout(function () {
+            setTimeout(function() {
                 window.location.href = "/dashboard";
             }, 300);
         });
 
-
-
-
-        // Evento cuando todos están listos (puedes mostrar alerta o directamente iniciar)
-        socket.on('todos_listos', () => {
-            alert('¡Todos los jugadores están listos! Ahora el anfitrión puede iniciar la partida.');
-        });
-
-        // Ya tienes el botón salir implementado abajo en tu código
-
+        // Cuando se inicia la partida
         socket.on('partida_iniciada', (data) => {
             alert('🚀 ¡La partida ha comenzado!');
-
-            // Crear o limpiar contenedor para números
-            let contenedorNumeros = document.getElementById('contenedor-numeros');
-            if (!contenedorNumeros) {
-                contenedorNumeros = document.createElement('div');
-                contenedorNumeros.id = 'contenedor-numeros';
-                contenedorNumeros.style.border = '3px solid #6a5acd';
-                contenedorNumeros.style.padding = '15px';
-                contenedorNumeros.style.marginTop = '20px';
-                contenedorNumeros.style.fontSize = '1.5rem';
-                contenedorNumeros.style.backgroundColor = '#e0e0ff';
-                contenedorNumeros.style.maxWidth = '300px';
-                contenedorNumeros.style.marginLeft = 'auto';
-                contenedorNumeros.style.marginRight = 'auto';
-                contenedorNumeros.style.textAlign = 'center';
-                contenedorNumeros.style.borderRadius = '10px';
-
-                const titulo = document.createElement('h3');
-                titulo.textContent = 'Números saliendo:';
-                contenedorNumeros.appendChild(titulo);
-
-                const listaNumeros = document.createElement('div');
-                listaNumeros.id = 'lista-numeros';
-                contenedorNumeros.appendChild(listaNumeros);
-
-                document.body.appendChild(contenedorNumeros);
-            } else {
-                document.getElementById('lista-numeros').innerHTML = '';
-            }
-
-            // Resto de código para mostrar cartones ...
+            document.getElementById('contenedor-numeros').style.display = 'block';
+            
             const contenedor = document.getElementById('contenedor-cartones');
-            contenedor.innerHTML = ''; // Limpiar
-
-            const cartones = data.cartones;
-
-            const bingoContainer = document.createElement('div');
-            bingoContainer.className = 'bingo-container';
-
-            Object.entries(cartones).forEach(([jugador, carton]) => {
+            contenedor.innerHTML = '';
+            
+            // Mostrar solo el cartón del jugador actual
+            if (data.cartones[username]) {
+                const carton = data.cartones[username];
+                const wrapper = document.createElement('div');
+                wrapper.className = 'bingo-card-wrapper';
+                
+                const title = document.createElement('div');
+                title.className = 'card-title';
+                title.textContent = 'Tu cartón';
+                wrapper.appendChild(title);
+                
                 const cardDiv = document.createElement('div');
                 cardDiv.className = 'bingo-card';
-
+                
+                // Crear encabezado B I N G O
                 const header = document.createElement('div');
                 header.className = 'bingo-header';
-
                 ['B', 'I', 'N', 'G', 'O'].forEach(letra => {
                     const letraDiv = document.createElement('div');
                     letraDiv.textContent = letra;
-                    letraDiv.style.flex = '1';
                     header.appendChild(letraDiv);
                 });
-
                 cardDiv.appendChild(header);
-
-                carton.forEach((fila, i) => {
+                
+                // Crear filas del cartón
+                carton.forEach(fila => {
                     const filaDiv = document.createElement('div');
                     filaDiv.className = 'bingo-row';
-
-                    fila.forEach((celda, j) => {
+                    
+                    fila.forEach((celda, index) => {
                         const celdaDiv = document.createElement('div');
                         celdaDiv.className = 'bingo-cell';
-
+                        
                         if (celda === "") {
                             celdaDiv.classList.add('free');
-                            celdaDiv.textContent = "Libre";
+                            celdaDiv.textContent = "FREE";
                         } else {
                             celdaDiv.textContent = celda;
+                            celdaDiv.onclick = function() {
+                                marcarNumero(this, celda);
+                            };
                         }
-
+                        
                         filaDiv.appendChild(celdaDiv);
                     });
-
+                    
                     cardDiv.appendChild(filaDiv);
                 });
-
-                const nombreJugador = document.createElement('h3');
-                nombreJugador.style.textAlign = 'center';
-                nombreJugador.textContent = jugador;
-
-                cardDiv.insertBefore(nombreJugador, header);
-
-                bingoContainer.appendChild(cardDiv);
-            });
-
-            contenedor.appendChild(bingoContainer);
-
+                
+                wrapper.appendChild(cardDiv);
+                contenedor.appendChild(wrapper);
+            }
+            
             btnListo.disabled = true;
         });
 
         // Escuchar nuevos números
         socket.on('numero_nuevo', data => {
             const listaNumeros = document.getElementById('lista-numeros');
-            if (listaNumeros) {
-                const numeroDiv = document.createElement('div');
-                numeroDiv.textContent = data.numero;
-                numeroDiv.style.display = 'inline-block';
-                numeroDiv.style.margin = '5px';
-                numeroDiv.style.padding = '10px';
-                numeroDiv.style.borderRadius = '5px';
-                numeroDiv.style.backgroundColor = '#6a5acd';
-                numeroDiv.style.color = 'white';
-                numeroDiv.style.fontWeight = 'bold';
-                numeroDiv.style.minWidth = '40px';
-                numeroDiv.style.textAlign = 'center';
-
-                listaNumeros.appendChild(numeroDiv);
-
-                // Scroll automático para ver siempre el último número (opcional)
-                listaNumeros.scrollTop = listaNumeros.scrollHeight;
-            }
+            const numeroDiv = document.createElement('div');
+            numeroDiv.className = 'numero-bola';
+            numeroDiv.textContent = data.numero;
+            listaNumeros.appendChild(numeroDiv);
+            
+            // Marcar automáticamente en los cartones si existe el número
+            document.querySelectorAll('.bingo-cell').forEach(celda => {
+                if (celda.textContent == data.numero && !celda.classList.contains('free')) {
+                    celda.classList.add('marked');
+                }
+            });
         });
 
         socket.on('fin_partida', () => {
             alert('🎉 ¡Se han emitido todos los números! La partida ha terminado.');
         });
 
-
+        // Evento cuando otro jugador completa un bingo
+        socket.on('bingo_ganador', data => {
+            if (data.username !== username) {
+                alert(`🎉 ¡El jugador ${data.username} ha cantado BINGO!`);
+            }
+        });
     </script>
 </body>
-
 </html>

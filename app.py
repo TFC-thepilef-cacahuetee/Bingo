@@ -15,6 +15,7 @@ import psycopg2
 from dotenv import load_dotenv
 import os
 
+
 # Creamos la app Flask y le pasamos __name__ para que pueda encontrar rutas de archivos como templates y estáticos
 app = Flask(__name__)
 socketio = SocketIO(app, async_mode='eventlet')
@@ -26,6 +27,7 @@ def indexRuta():
 
 # Esto es para hacer la conexion con la base de datos
 numeros_usados_global = set()
+numeros_marcados_por_jugador = {}
 
 # Load environment variables from .env
 load_dotenv()
