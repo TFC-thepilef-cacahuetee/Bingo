@@ -218,6 +218,7 @@
         // Variables globales
         let numerosSalidos = [];
         let modoLinea = true; // Comienza en modo línea
+        let lineaCantada = false; // Para evitar múltiples cantos de línea
         const botonesAccion = document.getElementById('botonesAccion');
         const btnBingoLinea = document.getElementById('btnBingoLinea');
         const mensajeValidacion = document.getElementById('mensajeValidacion');
@@ -322,10 +323,19 @@
 
         btnBingoLinea.addEventListener('click', () => {
             const carton = document.querySelector('.bingo-card-wrapper[data-jugador="' + username + '"] .bingo-card');
-            const { todosSalidos } = verificarNumerosMarcados(carton);
+            const { todosSalidos, numerosMarcados } = verificarNumerosMarcados(carton);
             
             if (!todosSalidos) {
                 mostrarMensaje('error', '⚠️ No puedes cantar. Hay números marcados que no han salido.');
+                
+                socket.emit('intento_invalido', {
+                    codigo_sala: codigoSala,
+                    username: username,
+                    tipo: modoLinea ? 'linea' : 'bingo',
+                    valido: false,
+                    motivo: 'Números no salidos: ' + numerosMarcados.filter(n => !numerosSalidos.includes(n)).join(', ')
+                });
+                
                 return;
             }
             
@@ -339,15 +349,27 @@
                         codigo_sala: codigoSala,
                         username: username,
                         tipo: 'linea',
-                        cantidad: lineasCompletas
+                        cantidad: lineasCompletas,
+                        valido: true
                     });
                     
                     // Cambiar a modo bingo después de cantar línea
                     modoLinea = false;
+                    lineaCantada = true;
                     btnBingoLinea.textContent = 'Cantar Bingo';
                     btnBingoLinea.style.backgroundColor = '#4CAF50';
+
+                    // Notificar a todos que cambien a modo bingo
+                    socket.emit('cambio_a_bingo', { codigo_sala: codigoSala });
                 } else {
                     mostrarMensaje('error', '⚠️ No tienes ninguna línea horizontal completa.');
+                    socket.emit('intento_invalido', {
+                        codigo_sala: codigoSala,
+                        username: username,
+                        tipo: 'linea',
+                        valido: false,
+                        motivo: 'No hay línea horizontal completa'
+                    });
                 }
             } else {
                 // Verificar bingo completo
@@ -358,12 +380,29 @@
                     socket.emit('bingo_completado', {
                         codigo_sala: codigoSala,
                         username: username,
-                        tipo: 'bingo'
+                        tipo: 'bingo',
+                        valido: true
                     });
                 } else {
                     mostrarMensaje('error', '⚠️ No tienes un bingo completo.');
+                    socket.emit('intento_invalido', {
+                        codigo_sala: codigoSala,
+                        username: username,
+                        tipo: 'bingo',
+                        valido: false,
+                        motivo: 'Cartón no completo'
+                    });
                 }
             }
+        });
+
+        // Nuevos listeners para manejar los eventos de cambi
+        socket.on('cambio_a_bingo', () => {
+            modoLinea = false;
+            lineaCantada = true;
+            btnBingoLinea.textContent = 'Cantar Bingo';
+            btnBingoLinea.style.backgroundColor = '#4CAF50';
+            mostrarMensaje('info', '¡Alguien ha cantado línea! Ahora solo se puede cantar BINGO.');
         });
 
         document.getElementById('salirSalaBtn').addEventListener('click', function() {
