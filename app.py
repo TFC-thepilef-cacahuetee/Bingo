@@ -376,7 +376,7 @@ numeros_emitidos_por_sala = {}
 
 def emitir_numeros_periodicos(codigo_sala):
     numeros_emitidos_por_sala[codigo_sala] = set()
-    todos_numeros = set(range(1, 91))
+    todos_numeros = set(range(1, 100))  # Números del 1 al 99
 
     while True:
         disponibles = list(todos_numeros - numeros_emitidos_por_sala[codigo_sala])

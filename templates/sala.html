@@ -347,13 +347,6 @@
             numeroDiv.className = 'numero-bola';
             numeroDiv.textContent = data.numero;
             listaNumeros.appendChild(numeroDiv);
-            
-            // Marcar automáticamente en los cartones si existe el número
-            document.querySelectorAll('.bingo-cell').forEach(celda => {
-                if (celda.textContent == data.numero && !celda.classList.contains('free')) {
-                    celda.classList.add('marked');
-                }
-            });
         });
 
         socket.on('fin_partida', () => {
