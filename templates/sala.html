@@ -215,29 +215,95 @@
     const btnBingoLinea = document.getElementById('btnBingoLinea');
     const mensajeValidacion = document.getElementById('mensajeValidacion');
 
-    let lineaCantada = false;
-    let modoLinea = true;
+        socket.emit('unirse_sala', { codigo_sala: codigoSala, username: username });
 
-    function mostrarMensaje(tipo, mensaje) {
-        mensajeValidacion.textContent = mensaje;
-        mensajeValidacion.className = 'mensaje-validacion';
+        const btnListo = document.getElementById('btnListo');
+        const jugadoresDiv = document.getElementById('jugadores');
 
-        if (tipo === 'exito') {
-            mensajeValidacion.classList.add('mensaje-exito');
-        } else if (tipo === 'error') {
-            mensajeValidacion.classList.add('mensaje-error');
-        } else if (tipo === 'info') {
-            mensajeValidacion.style.backgroundColor = '#d9edf7';
-            mensajeValidacion.style.color = '#31708f';
-            mensajeValidacion.style.border = '1px solid #bce8f1';
+        btnListo.addEventListener('click', () => {
+            socket.emit('jugador_listo', { codigo_sala: codigoSala, username: username });
+            btnListo.disabled = true;
+        });
+
+        socket.on('actualizar_jugadores_listos', data => {
+            jugadoresDiv.innerHTML = '';
+            data.jugadores.forEach(jugador => {
+                const div = document.createElement('div');
+                div.className = 'jugador';
+                let estado = data.listos[jugador] ? '✅ Listo' : '❌ No listo';
+                div.textContent = `${jugador} - ${estado}`;
+                jugadoresDiv.appendChild(div);
+            });
+        });
+
+        function marcarNumero(celda, numero) {
+            celda.classList.toggle('marked');
+
+            socket.emit('numero_marcado', {
+                numero: numero,
+                marcado: celda.classList.contains('marked'),
+                codigo_sala: codigoSala,
+                username: username
+            });
+
+            actualizarEstadoBotones();
         }
 
-        setTimeout(() => {
-            mensajeValidacion.textContent = '';
+        function verificarNumerosMarcados(carton) {
+            const celdasMarcadas = carton.querySelectorAll('.bingo-cell.marked:not(.free)');
+            const numerosMarcados = Array.from(celdasMarcadas).map(celda => parseInt(celda.textContent));
+            
+            const todosSalidos = numerosMarcados.every(numero => numerosSalidos.includes(numero));
+            
+            return {
+                todosSalidos,
+                numerosMarcados
+            };
+        }
+
+        function verificarLineasCompletas(carton) {
+            const filas = carton.querySelectorAll('.bingo-row');
+            let lineasCompletas = 0;
+            
+            // Verificar solo filas horizontales (no columnas ni diagonales)
+            filas.forEach(fila => {
+                const celdas = fila.querySelectorAll('.bingo-cell:not(.free)');
+                const todasMarcadas = Array.from(celdas).every(c => c.classList.contains('marked'));
+                if (todasMarcadas) {
+                    lineasCompletas++;
+                    resaltarLinea(celdas);
+                }
+            });
+            
+            return lineasCompletas;
+        }
+
+        function resaltarLinea(celdas) {
+            celdas.forEach(celda => {
+                if (celda) celda.classList.add('linea-completa');
+            });
+        }
+
+        function verificarBingoCompleto(carton) {
+            const todasCeldas = carton.querySelectorAll('.bingo-cell:not(.free)');
+            return Array.from(todasCeldas).every(c => c.classList.contains('marked'));
+        }
+
+        function mostrarMensaje(tipo, mensaje) {
+            mensajeValidacion.textContent = mensaje;
             mensajeValidacion.className = 'mensaje-validacion';
-            mensajeValidacion.removeAttribute('style');
-        }, 5000);
-    }
+            
+            if (tipo === 'exito') {
+                mensajeValidacion.classList.add('mensaje-exito');
+            } else {
+                mensajeValidacion.classList.add('mensaje-error');
+            }
+            
+            setTimeout(() => {
+                mensajeValidacion.textContent = '';
+                mensajeValidacion.className = 'mensaje-validacion';
+            }, 5000);
+        }
 
         function actualizarEstadoBotones() {
             const carton = document.querySelector('.bingo-card-wrapper[data-jugador="' + username + '"] .bingo-card');
@@ -470,11 +536,28 @@ socket.on('cambio_a_bingo', () => {
     mostrarMensaje('info', '¡Alguien ha cantado línea! Ahora solo se puede cantar BINGO.');
 });
 
-    socket.on('bingo_completado', (nombreJugador) => {
-        mostrarMensaje('exito', `¡${nombreJugador} ha cantado BINGO correctamente!`);
-        btnBingoLinea.disabled = true;
-    });
-</script>
+socket.on('bingo_completado', data => {
+    if (data.username !== username) {
+        const mensaje = data.tipo === 'linea' 
+            ? `🎉 ¡${data.username} ha cantado LÍNEA! (${data.cantidad} línea(s))` 
+            : `🏆 ¡${data.username} ha cantado BINGO!`;
+        
+        mostrarMensaje('info', mensaje);
+        
+        if (data.tipo === 'linea' && !lineaCantada) {
+            modoLinea = false;
+            lineaCantada = true;
+            btnBingoLinea.textContent = 'Cantar Bingo';
+            btnBingoLinea.style.backgroundColor = '#4CAF50';
+        }
+    }
+});
 
+socket.on('intento_invalido', data => {
+    if (data.username !== username) {
+        mostrarMensaje('error', `❌ ${data.username} intentó cantar ${data.tipo.toUpperCase()} pero no era válido (${data.motivo})`);
+    }
+});
+    </script>
 </body>
 </html>
