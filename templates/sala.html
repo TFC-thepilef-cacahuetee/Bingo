@@ -257,27 +257,6 @@
             actualizarEstadoBotones();
         }
 
-        function mostrarMensaje(tipo, mensaje) {
-        mensajeValidacion.textContent = mensaje;
-        mensajeValidacion.className = 'mensaje-validacion';
-
-        if (tipo === 'exito') {
-            mensajeValidacion.classList.add('mensaje-exito');
-        } else if (tipo === 'error') {
-            mensajeValidacion.classList.add('mensaje-error');
-        } else if (tipo === 'info') {
-            mensajeValidacion.style.backgroundColor = '#d9edf7';
-            mensajeValidacion.style.color = '#31708f';
-            mensajeValidacion.style.border = '1px solid #bce8f1';
-        }
-
-        setTimeout(() => {
-            mensajeValidacion.textContent = '';
-            mensajeValidacion.className = 'mensaje-validacion';
-            mensajeValidacion.removeAttribute('style');
-        }, 5000);
-    }
-
         function verificarNumerosMarcados(carton) {
             const celdasMarcadas = carton.querySelectorAll('.bingo-cell.marked:not(.free)');
             const numerosMarcados = Array.from(celdasMarcadas).map(celda => parseInt(celda.textContent));
@@ -419,12 +398,12 @@
 
         // Nuevos listeners para manejar los eventos de cambi
         socket.on('cambio_a_bingo', () => {
-        modoLinea = false;
-        lineaCantada = true;
-        btnBingoLinea.textContent = 'Cantar Bingo';
-        btnBingoLinea.style.backgroundColor = '#4CAF50';
-        mostrarMensaje('info', '¡Alguien ha cantado LÍNEA! Ahora solo se puede cantar BINGO.');
-    });
+            modoLinea = false;
+            lineaCantada = true;
+            btnBingoLinea.textContent = 'Cantar Bingo';
+            btnBingoLinea.style.backgroundColor = '#4CAF50';
+            mostrarMensaje('info', '¡Alguien ha cantado línea! Ahora solo se puede cantar BINGO.');
+        });
 
         document.getElementById('salirSalaBtn').addEventListener('click', function() {
             socket.emit('salir_sala', { codigo_sala: codigoSala, username: username });
@@ -583,6 +562,5 @@ socket.on('intento_invalido', data => {
     }
 });
     </script>
-
 </body>
 </html>
