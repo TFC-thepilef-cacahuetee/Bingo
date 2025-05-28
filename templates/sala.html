@@ -509,21 +509,26 @@
         });
 
         socket.on('numero_marcado', data => {
-            const { numero, username: jugadorQueMarco } = data;
+    const { numero, username: jugadorQueMarco, marcado } = data;
 
-            document.querySelectorAll('.bingo-card-wrapper').forEach(wrapper => {
-                const jugadorCarton = wrapper.dataset.jugador;
+    document.querySelectorAll('.bingo-card-wrapper').forEach(wrapper => {
+        const jugadorCarton = wrapper.dataset.jugador;
 
-                if (jugadorCarton === jugadorQueMarco) {
-                    const celdas = wrapper.querySelectorAll('.bingo-cell');
-                    celdas.forEach(celda => {
-                        if (celda.textContent == numero && !celda.classList.contains('marked')) {
-                            celda.classList.add('marked-otro');
-                        }
-                    });
+        if (jugadorCarton === jugadorQueMarco) {
+            const celdas = wrapper.querySelectorAll('.bingo-cell');
+            celdas.forEach(celda => {
+                if (celda.textContent == numero) {
+                    if (marcado) {
+                        celda.classList.add('marked-otro');
+                    } else {
+                        celda.classList.remove('marked-otro');
+                    }
                 }
             });
-        });
+        }
+    });
+});
+
 
         socket.on('fin_partida', () => {
             alert('🎉 ¡Se han emitido todos los números! La partida ha terminado.');
