@@ -368,7 +368,7 @@ def juego_individual():
 
     numeros_usados = set()  # conjunto local para números usados en esta partida individual
 
-    cartones = [generar_carton_bingo_personalizado(numeros_usados) for _ in range(cantidad_jugadores)]
+    cartones = [generar_carton_bingo_personalizado() for _ in range(cantidad_jugadores)]
 
     return render_template('juego_individual.html', cartones=cartones)
 
