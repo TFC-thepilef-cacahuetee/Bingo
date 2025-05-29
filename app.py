@@ -325,34 +325,30 @@ def logoutRuta():
     flash("✅ Has cerrado sesión exitosamente.")
     return redirect(url_for('indexRuta'))  # Redirigir al usuario a la página de inicio
 
-blancos = random.sample(posiciones, 8)
-
-def generar_carton_bingo_personalizado(numeros_usados):
+def generar_carton_bingo_personalizado():
     rangos = {
         'B': range(1, 20),
         'I': range(20, 40),
         'N': range(40, 60),
         'G': range(60, 80),
-        'O': range(80, 91)  # corregido aquí
+        'O': range(80, 100)
     }
 
     columnas = {}
 
     for letra, rango in rangos.items():
-        posibles = list(set(rango) - numeros_usados)
-        if len(posibles) < 5:
-            raise ValueError(f"No hay suficientes números disponibles para la columna {letra}")
-        seleccionados = random.sample(posibles, 5)
+        seleccionados = random.sample(rango, 5)
         columnas[letra] = seleccionados
-        numeros_usados.update(seleccionados)
 
     carton = []
     for i in range(5):
         fila = [columnas['B'][i], columnas['I'][i], columnas['N'][i], columnas['G'][i], columnas['O'][i]]
         carton.append(fila)
 
-    # Poner espacio libre en el centro (posición 2,2)
-    carton[2][2] = ""
+    posiciones = [(i, j) for i in range(5) for j in range(5)]
+    blancos = random.sample(posiciones, 8)  # Aquí cambiamos de 10 a 8 espacios en blanco
+    for i, j in blancos:
+        carton[i][j] = ""
 
     return carton
 
