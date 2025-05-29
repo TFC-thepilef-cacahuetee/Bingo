@@ -226,7 +226,8 @@ salas = {
 @socketio.on('unirse_sala')
 def unirse_sala(data):
     codigo_sala = data['codigo_sala']
-    username = data['username']
+    username = data['username'].strip().lower()
+
 
     if codigo_sala not in salas:
         salas[codigo_sala] = {'jugadores': [], 'listos': {}}
@@ -239,6 +240,7 @@ def unirse_sala(data):
     if username not in salas[codigo_sala]['jugadores']:
         salas[codigo_sala]['jugadores'].append(username)
         salas[codigo_sala]['listos'][username] = False
+
 
     join_room(codigo_sala)
 
@@ -254,9 +256,12 @@ def emit_actualizacion_jugadores(codigo_sala):
 @socketio.on('jugador_listo')
 def handle_jugador_listo(data):
     codigo_sala = data['codigo_sala']
-    username = data['username']
+    username = data['username'].strip().lower()
 
-    if codigo_sala in salas and username in salas[codigo_sala]['listos']:
+    if codigo_sala in salas:
+        if username not in salas[codigo_sala]['jugadores']:
+            # No debería pasar, pero lo añadimos por seguridad
+            salas[codigo_sala]['jugadores'].append(username)
         salas[codigo_sala]['listos'][username] = True
 
         emit_actualizacion_jugadores(codigo_sala)
@@ -264,8 +269,11 @@ def handle_jugador_listo(data):
         jugadores = salas[codigo_sala]['jugadores']
         listos_dict = salas[codigo_sala]['listos']
 
-        todos_listos = all(listos_dict.get(j, False) for j in jugadores)
-        if todos_listos:
+        # Verifica que todos los jugadores estén listos
+        faltantes = [j for j in jugadores if not listos_dict.get(j, False)]
+        print(f"Faltan por estar listos: {faltantes}")
+
+        if len(faltantes) == 0:
             numeros_usados_sala = set()
             cartones_por_jugador = {}
 
@@ -275,7 +283,6 @@ def handle_jugador_listo(data):
 
             emit('partida_iniciada', {'cartones': cartones_por_jugador}, room=codigo_sala)
 
-            # Iniciar emisión de números en hilo separado
             thread = threading.Thread(target=emitir_numeros_periodicos, args=(codigo_sala,))
             thread.start()
 
@@ -283,7 +290,8 @@ def handle_jugador_listo(data):
 @socketio.on('salir_sala')
 def handle_salir_sala(data):
     codigo_sala = data['codigo_sala']
-    username = data['username']
+    username = data['username'].strip().lower()
+
 
     if codigo_sala in salas:
         if username in salas[codigo_sala]['jugadores']:
@@ -396,7 +404,7 @@ def emitir_numeros_periodicos(codigo_sala):
 def handle_numero_marcado(data):
     
     codigo_sala = data.get('codigo_sala')
-    username = data.get('username')
+    username = data.get('username', '').strip().lower()
     numero = data.get('numero')
     marcado = data.get('marcado')
 
@@ -411,7 +419,7 @@ def handle_numero_marcado(data):
 @socketio.on('linea_cantada')
 def handle_linea_cantada(data):
     codigo_sala = data.get('codigo_sala')
-    username = data.get('username')
+    username = data.get('username', '').strip().lower()
     emit('linea_cantada', {'username': username}, room=codigo_sala)
 
 
