@@ -218,6 +218,9 @@ salas = {
         'listos': {
             'user1': False,
             'user2': False,
+            'user3': False,
+            'user4': False,
+            'user5': False,
         }
     }
 }
