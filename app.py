@@ -218,9 +218,6 @@ salas = {
         'listos': {
             'user1': False,
             'user2': False,
-            'user3': False,
-            'user4': False,
-            'user5': False,
         }
     }
 }
@@ -328,7 +325,7 @@ def logoutRuta():
     flash("✅ Has cerrado sesión exitosamente.")
     return redirect(url_for('indexRuta'))  # Redirigir al usuario a la página de inicio
 
-
+blancos = random.sample(posiciones, 8)
 
 def generar_carton_bingo_personalizado(numeros_usados):
     rangos = {
@@ -336,11 +333,11 @@ def generar_carton_bingo_personalizado(numeros_usados):
         'I': range(20, 40),
         'N': range(40, 60),
         'G': range(60, 80),
-        'O': range(89, 100)
+        'O': range(80, 91)  # corregido aquí
     }
 
     columnas = {}
-    
+
     for letra, rango in rangos.items():
         posibles = list(set(rango) - numeros_usados)
         if len(posibles) < 5:
@@ -354,12 +351,12 @@ def generar_carton_bingo_personalizado(numeros_usados):
         fila = [columnas['B'][i], columnas['I'][i], columnas['N'][i], columnas['G'][i], columnas['O'][i]]
         carton.append(fila)
 
-    posiciones = [(i, j) for i in range(5) for j in range(5)]
-    blancos = random.sample(posiciones, 10)
-    for i, j in blancos:
-        carton[i][j] = ""
+    # Poner espacio libre en el centro (posición 2,2)
+    carton[2][2] = ""
 
     return carton
+
+
 
 @app.route('/juego_individual', methods=['POST'])
 def juego_individual():
