@@ -278,7 +278,7 @@ def handle_jugador_listo(data):
             cartones_por_jugador = {}
 
             for jugador in jugadores:
-                carton = generar_carton_bingo_personalizado(numeros_usados_sala)
+                carton = generar_carton_bingo_personalizado()
                 cartones_por_jugador[jugador] = carton
 
             emit('partida_iniciada', {'cartones': cartones_por_jugador}, room=codigo_sala)
