@@ -22,3 +22,14 @@ def juego_individual():
         return redirect(url_for('dashboard.dashboard'))
     cartones = [generar_carton_bingo() for _ in range(cantidad_jugadores)]
     return render_template('juego_individual.html', cartones=cartones)
+
+@dashboard_bp.route('/historial')
+def historial():
+    if 'user_id' not in session:
+        flash("⚠️ Debes iniciar sesión primero.")
+        return redirect(url_for('auth.login'))
+    
+    # Logica para el historial aqui
+
+    return render_template('historial.html', partidas=historial_partidas)
+
