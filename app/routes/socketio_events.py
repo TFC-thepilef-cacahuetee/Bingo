@@ -1,10 +1,9 @@
 # Este módulo registra los eventos de SocketIO para la gestión de salas y juego en tiempo real.
-from flask import session
 from flask_socketio import emit, join_room, leave_room
 import threading
 from ..utils.bingo import generar_carton_bingo
 from ..utils.threading import emitir_numeros_periodicos
-from .. import socketio  # Importamos el objeto socketio real
+from ..sockets import socketio 
 
 # Estructura en memoria para salas y jugadores
 salas = {}
