@@ -204,7 +204,9 @@
 
         <div id="botonesAccion" class="botones-accion" style="display: none;">
             <button id="btnBingoLinea">Cantar Línea</button>
+            <button id="btnVerificarBingo" disabled>Verificar Bingo</button>
         </div>
+
         <div id="mensajeValidacion" class="mensaje-validacion"></div>
 
         <div id="contenedor-numeros" class="numeros-container" style="display: none;">
@@ -330,8 +332,15 @@
             const carton = document.querySelector('.bingo-card-wrapper[data-jugador="' + username + '"] .bingo-card');
             if (!carton) return;
 
+            const totalCeldas = carton.querySelectorAll('.bingo-cell:not(.free)').length;
             const marcados = carton.querySelectorAll('.bingo-cell.marked:not(.free)').length;
+
             btnBingoLinea.disabled = marcados < 5;
+
+            const btnVerificarBingo = document.getElementById('btnVerificarBingo');
+            if (btnVerificarBingo) {
+                btnVerificarBingo.disabled = marcados !== totalCeldas;
+            }
         }
 
         btnBingoLinea.addEventListener('click', () => {
@@ -407,6 +416,13 @@
                     });
                 }
             }
+            const btnVerificarBingo = document.getElementById('btnVerificarBingo');
+            const totalCeldas = carton.querySelectorAll('.bingo-cell:not(.free)').length;
+            const marcados = carton.querySelectorAll('.bingo-cell.marked:not(.free)').length;
+
+            btnBingoLinea.disabled = marcados < 5;
+            btnVerificarBingo.disabled = marcados !== totalCeldas;
+
         });
 
         // Nuevos listeners para manejar los eventos de cambi
@@ -576,6 +592,32 @@
                 mostrarMensaje('error', `❌ ${data.username} intentó cantar ${data.tipo.toUpperCase()} pero no era válido (${data.motivo})`);
             }
         });
+
+        btnVerificarBingo.addEventListener('click', () => {
+            const carton = document.querySelector('.bingo-card-wrapper[data-jugador="' + username + '"] .bingo-card');
+            const { todosSalidos, numerosMarcados } = verificarNumerosMarcados(carton);
+
+            if (todosSalidos && verificarBingoCompleto(carton)) {
+                mostrarMensaje('exito', '🎉 ¡BINGO VÁLIDO! ¡Eres el ganador!');
+                socket.emit('bingo_completado', {
+                    codigo_sala: codigoSala,
+                    username: username,
+                    tipo: 'bingo',
+                    valido: true
+                });
+            } else {
+                const noSalidos = numerosMarcados.filter(n => !numerosSalidos.includes(n));
+                mostrarMensaje('error', '❌ Aún hay números no salidos: ' + noSalidos.join(', '));
+                socket.emit('intento_invalido', {
+                    codigo_sala: codigoSala,
+                    username: username,
+                    tipo: 'bingo',
+                    valido: false,
+                    motivo: 'Números no salidos: ' + noSalidos.join(', ')
+                });
+            }
+        });
+
     </script>
 </body>
 
