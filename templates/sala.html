@@ -464,7 +464,7 @@
                             celdaDiv.textContent = "";
                         } else {
                             celdaDiv.textContent = celda;
-                            if (nombreJugador === username) {
+                            if (nombreJugador.trim().toLocaleLowerCase() === username.trim().toLocaleLowerCase()) {
                                 celdaDiv.onclick = function () {
                                     marcarNumero(this, celda);
                                 };
