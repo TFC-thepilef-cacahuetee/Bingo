@@ -5,194 +5,8 @@
     <meta charset="UTF-8">
     <title>Sala de Bingo 🎉</title>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/socket.io/4.5.4/socket.io.min.js"></script>
-    <style>
-        body {
-            font-family: Arial, sans-serif;
-            padding: 20px;
-            background: #f2f2f2;
-        }
-
-        .sala-container {
-            background: white;
-            border-radius: 12px;
-            padding: 20px;
-            box-shadow: 0px 4px 10px rgba(0, 0, 0, 0.1);
-            max-width: 800px;
-            margin: 0 auto;
-        }
-
-        .jugadores-lista {
-            margin-top: 20px;
-        }
-
-        .jugador {
-            padding: 10px;
-            margin-bottom: 8px;
-            background: #e9e9e9;
-            border-radius: 8px;
-        }
-
-        button {
-            padding: 10px 20px;
-            background-color: #4CAF50;
-            color: white;
-            border: none;
-            border-radius: 8px;
-            cursor: pointer;
-            margin: 5px;
-        }
-
-        button:disabled {
-            background-color: #cccccc;
-        }
-
-        .bingo-container {
-            display: flex;
-            flex-wrap: wrap;
-            gap: 20px;
-            justify-content: center;
-            padding: 20px;
-        }
-
-        .bingo-card-wrapper {
-            margin: 15px;
-            text-align: center;
-        }
-
-        .card-title {
-            font-size: 1.2rem;
-            font-weight: bold;
-            margin-bottom: 10px;
-            color: #333;
-        }
-
-        .bingo-card {
-            border: 2px solid #333;
-            border-radius: 10px;
-            overflow: hidden;
-            box-shadow: 0 4px 10px rgba(0, 0, 0, 0.2);
-            width: 280px;
-            background-color: #fefefe;
-            font-family: 'Arial', sans-serif;
-        }
-
-        .bingo-header {
-            display: flex;
-            background-color: #6a5acd;
-            color: white;
-            font-weight: bold;
-            justify-content: space-around;
-            padding: 10px 0;
-            font-size: 1.2rem;
-        }
-
-        .bingo-row {
-            display: flex;
-        }
-
-        .bingo-cell {
-            flex: 1;
-            border: 1px solid #ccc;
-            text-align: center;
-            padding: 15px 0;
-            font-size: 1.1rem;
-            cursor: pointer;
-            transition: background-color 0.3s;
-        }
-
-        .bingo-cell.free {
-            background-color: #dcdcdc;
-            font-weight: bold;
-            color: #444;
-        }
-
-        .bingo-cell.marked {
-            background-color: green;
-            /* tu marcado */
-            color: white;
-        }
-
-        .bingo-cell.marked-otro {
-            background-color: orange;
-            /* marcado por otro jugador */
-            color: white;
-        }
-
-
-        .numeros-container {
-            background-color: #f8f8f8;
-            border-radius: 10px;
-            padding: 15px;
-            margin-top: 20px;
-            text-align: center;
-        }
-
-        .numeros-titulo {
-            font-size: 1.3rem;
-            margin-bottom: 10px;
-            color: #6a5acd;
-        }
-
-        .numeros-lista {
-            display: flex;
-            flex-wrap: wrap;
-            justify-content: center;
-            gap: 8px;
-        }
-
-        .numero-bola {
-            width: 40px;
-            height: 40px;
-            border-radius: 50%;
-            background-color: #6a5acd;
-            color: white;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            font-weight: bold;
-        }
-
-        .botones-accion {
-            text-align: center;
-            margin: 20px 0;
-        }
-
-        #btnBingoLinea {
-            background-color: #FFA500;
-            padding: 12px 25px;
-            font-size: 1.1rem;
-        }
-
-        .botones-accion button:disabled {
-            opacity: 0.6;
-            cursor: not-allowed;
-        }
-
-        .mensaje-validacion {
-            margin-top: 10px;
-            padding: 10px;
-            border-radius: 5px;
-            font-weight: bold;
-            text-align: center;
-        }
-
-        .mensaje-exito {
-            background-color: #dff0d8;
-            color: #3c763d;
-        }
-
-        .mensaje-error {
-            background-color: #f2dede;
-            color: #a94442;
-        }
-
-        .linea-completa {
-            background-color: #ffeb3b;
-            box-shadow: 0 0 10px gold;
-        }
-    </style>
+    <link rel="stylesheet" href="sala.css">
 </head>
-
 <body>
     <div class="sala-container">
         <h1>🎲 Sala de Bingo: <span id="codigoSala">{{ codigo_sala }}</span></h1>
@@ -617,6 +431,44 @@
                 });
             }
         });
+
+        // Escuchar cuando el servidor anuncia un ganador
+        socket.on('anunciar_ganador', (datos) => {
+            const mensaje = `🎉 ¡Bingo válido! Ganador: ${datos.ganador}`;
+            alert(mensaje);  // O puedes mostrarlo en un div visible en la página
+
+            // Reiniciar estado de listo para todos los jugadores
+            reiniciarEstadoListos();
+        });
+
+        // Función para resetear el estado de "listo" y botones
+        function reiniciarEstadoListos() {
+            // Botón estoy listo vuelve a habilitarse
+            btnListo.disabled = false;
+
+            // Mensaje de estado
+            mensajeEstado.textContent = 'Comienza una nueva ronda. Marca tus números y presiona "Estoy listo".';
+
+            // Limpiar marcado de números (opcional, si quieres resetear cartón)
+            // Aquí tú decides si reseteas el cartón o solo el estado listo
+
+            // Quitar marcas en el cartón (opcional)
+            const botones = document.querySelectorAll('#carton button');
+            botones.forEach(boton => {
+                boton.disabled = false;
+                boton.classList.remove('numero-marcado');
+            });
+
+            // Resetear variables internas
+            estaListo = false;
+            estaGanador = false;
+        }
+
+        socket.on('resetear_listo', () => {
+            reiniciarEstadoListos();
+        });
+
+
 
     </script>
 </body>

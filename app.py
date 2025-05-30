@@ -418,6 +418,31 @@ def handle_linea_cantada(data):
     username = data.get('username', '').strip().lower()
     emit('linea_cantada', {'username': username}, room=codigo_sala)
 
+@socketio.on('bingo_cantado')
+def handle_bingo_cantado(data):
+    codigo_sala = data.get('codigo_sala')
+    username = data.get('username', '').strip().lower()
+    carton_jugador = data.get('carton')  # asumo que el jugador manda su cartón para validar
+
+    # Aquí pones tu lógica para validar el bingo del jugador
+    bingo_valido = validar_bingo(carton_jugador)  # define esta función con tu lógica
+
+    if bingo_valido:
+        # Anunciar ganador a todos
+        emit('anunciar_ganador', {'ganador': username}, room=codigo_sala)
+
+        # Resetear estado 'listo' para todos los jugadores de la sala
+        if codigo_sala in salas:
+            for jugador in salas[codigo_sala]['listos']:
+                salas[codigo_sala]['listos'][jugador] = False
+            emit_actualizacion_jugadores(codigo_sala)
+
+    else:
+        # Si no es válido, puede emitir un mensaje o nada
+        emit('bingo_invalido', {'msg': 'Bingo no válido'}, room=request.sid)
+
+
+
 
 if __name__ == '__main__':
     socketio.run(app, debug=True, port=5000)
