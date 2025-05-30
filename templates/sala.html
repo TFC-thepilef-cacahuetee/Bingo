@@ -247,7 +247,12 @@
         });
 
         function marcarNumero(celda, numero) {
+            const marcado = !celda.classList.contains('marked');
             celda.classList.toggle('marked');
+
+            if (marcado) {
+                celda.classList.remove('marked-otro');
+            }
 
             socket.emit('numero_marcado', {
                 numero: numero,
@@ -258,6 +263,7 @@
 
             actualizarEstadoBotones();
         }
+
 
         function verificarNumerosMarcados(carton) {
             const celdasMarcadas = carton.querySelectorAll('.bingo-cell.marked:not(.free)');
