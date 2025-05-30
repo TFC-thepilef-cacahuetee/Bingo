@@ -12,33 +12,25 @@ import psycopg2
 from dotenv import load_dotenv
 import os
 
-
-# Creamos la app Flask y le pasamos __name__ para que pueda encontrar rutas de archivos como templates y estáticos
 app = Flask(__name__)
 socketio = SocketIO(app, async_mode='eventlet')
 
-# Definimos la ruta de la aplicacion, en este caso la ruta principal que es la que se carga al abrir la app
 @app.route('/')
 def indexRuta():
     return render_template('index.html')
 
-# Esto es para hacer la conexion con la base de datos
 numeros_usados_global = set()
 numeros_marcados_por_jugador = {}
 
-# Load environment variables from .env
 load_dotenv()
-# Esto es para que funcione el flash y es lo que hace que se guarde en la cookie la session
 app.secret_key = os.getenv('SECRET_KEY')
 
-# Fetch variables
 USER = os.getenv("user")
 PASSWORD = os.getenv("password")
 HOST = os.getenv("host")
 PORT = os.getenv("port")
 DBNAME = os.getenv("dbname")
 
-# Connect to the database
 try:
     connection = psycopg2.connect(
         user=USER,
@@ -49,15 +41,12 @@ try:
     )
     print("Connection successful!")
     
-    # Create a cursor to execute SQL queries
     cursor = connection.cursor()
     
-    # Example query
     cursor.execute("SELECT NOW();")
     result = cursor.fetchone()
     print("Current Time:", result)
 
-    # Close the cursor and connection
     cursor.close()
     connection.close()
     print("Connection closed.")
@@ -65,16 +54,12 @@ try:
 except Exception as e:
     print(f"Failed to connect: {e}")
 
-# Definimos todas las rutas que queremos usar en la aplicacion, en este caso son las rutas de los diferentes html que tenemos en la carpeta templates
 @app.route('/login', methods=['GET', 'POST'])
 def loginRuta():
     if request.method == 'POST':
         username = request.form.get('username')
         dni_plano = request.form.get('dni')
-
-        # Hashear el DNI ingresado
         dni_hash = sha256(dni_plano.encode()).hexdigest()
-
         try:
             connection = psycopg2.connect(
                 user=USER,
@@ -129,14 +114,11 @@ def registroRuta():
                 dbname=DBNAME
             )
             cursor = connection.cursor()
-
-            # Validar si el usuario o el dni ya existen
             cursor.execute("SELECT 1 FROM usuarios WHERE username = %s OR dni = %s", (username, dni_hash))
             if cursor.fetchone():
                 flash("⚠️ El nombre de usuario o DNI ya están registrados.")
                 return render_template('registro.html')
 
-            # Insertar usuario nuevo
             cursor.execute(
                 "INSERT INTO usuarios (username, dni, mayor_edad) VALUES (%s, %s, %s)",
                 (username, dni_hash, mayor_edad)
@@ -159,7 +141,6 @@ def registroRuta():
 
     return render_template('registro.html')
 
-
 @app.route('/dashboard')
 def dashboardRuta():
     if 'user_id' not in session:
@@ -167,15 +148,12 @@ def dashboardRuta():
         return redirect(url_for('loginRuta'))
     return render_template('dashboard.html')
 
-
-
 @app.route('/crear_sala', methods=['POST'])
 def crear_sala():
     if 'user_id' not in session:
         flash("⚠️ Debes iniciar sesión primero.")
         return redirect(url_for('loginRuta'))
 
-    # Generar un ID de sala único
     codigo_sala = ''.join(random.choices(string.ascii_uppercase + string.digits, k=6))
 
     try:
@@ -187,8 +165,6 @@ def crear_sala():
             dbname=DBNAME
         )
         cursor = connection.cursor()
-
-        # Insertar la nueva sala
         cursor.execute(
             "INSERT INTO salas (id, creador_id, estado) VALUES (%s, %s, %s)",
             (codigo_sala, session['user_id'], 'esperando')
@@ -209,9 +185,6 @@ def crear_sala():
         if connection:
             connection.close()
 
-
-# Para guardar quienes están en qué sala
-# Lista de salas (esto es solo un ejemplo, puede estar en una base de datos)
 salas = {
     'codigo_sala': {
         'jugadores': ['user1', 'user2'],
@@ -221,7 +194,6 @@ salas = {
         }
     }
 }
-
 
 @socketio.on('unirse_sala')
 def unirse_sala(data):
