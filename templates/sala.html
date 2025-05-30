@@ -560,10 +560,6 @@
             });
         });
 
-
-
-
-
         socket.on('fin_partida', () => {
             alert('🎉 ¡Se han emitido todos los números! La partida ha terminado.');
             botonesAccion.style.display = 'none';
@@ -617,43 +613,6 @@
                 });
             }
         });
-
-        // Escuchar cuando el servidor anuncia un ganador
-        socket.on('anunciar_ganador', (datos) => {
-            const mensaje = `🎉 ¡Bingo válido! Ganador: ${datos.ganador}`;
-            alert(mensaje);  // O puedes mostrarlo en un div visible en la página
-
-            // Reiniciar estado de listo para todos los jugadores
-            reiniciarEstadoListos();
-        });
-
-        // Función para resetear el estado de "listo" y botones
-        function reiniciarEstadoListos() {
-            // Botón estoy listo vuelve a habilitarse
-            btnListo.disabled = false;
-
-            // Mensaje de estado
-            mensajeEstado.textContent = 'Comienza una nueva ronda. Marca tus números y presiona "Estoy listo".';
-
-            // Limpiar marcado de números (opcional, si quieres resetear cartón)
-            // Aquí tú decides si reseteas el cartón o solo el estado listo
-
-            // Quitar marcas en el cartón (opcional)
-            const botones = document.querySelectorAll('#carton button');
-            botones.forEach(boton => {
-                boton.disabled = false;
-                boton.classList.remove('numero-marcado');
-            });
-
-            // Resetear variables internas
-            estaListo = false;
-            estaGanador = false;
-        }
-
-        socket.on('resetear_listo', () => {
-            reiniciarEstadoListos();
-        });
-
 
 
     </script>
