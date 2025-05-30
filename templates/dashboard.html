@@ -28,7 +28,7 @@
                         <p>crear una sala con amigos</p>
                     </div>
                     <form method="POST" action="{{ url_for('crear_sala') }}">
-                        <button type="submit" class="play-btn">Crear sala o Unirse</button>
+                        <button type="submit" class="play-btn">Crear Sala</button>
                     </form>
                 </div>
                 <!-- Tarjeta 2: Unirse a sala -->
@@ -70,16 +70,19 @@
     </div>
     
     <script>
-        document.getElementById('unirse-sala-form').addEventListener('submit', function(event) {
-            event.preventDefault();
-            const codigoSala = document.getElementById('codigo_sala').value.trim();
-            if (codigoSala !== "") {
-                window.location.href = `/sala/${codigoSala}`;
-            } else {
-                alert("⚠️ Por favor ingresa un código de sala.");
-            }
-        });
-    </script>
+            document.getElementById('unirse-sala-form').addEventListener('submit', function (event) {
+                event.preventDefault(); // Evita que recargue la página
+
+                const codigoSala = document.getElementById('codigo_sala').value.trim();
+
+                if (codigoSala !== "") {
+                    // Redirecciona al URL de la sala
+                    window.location.href = `/sala/${codigoSala}`;
+                } else {
+                    alert("⚠️ Por favor ingresa un código de sala.");
+                }
+            });
+        </script>
 </body>
 
 </html>

@@ -1,19 +1,17 @@
 import eventlet
-eventlet.monkey_patch()# En esta parte se pone todo lo que queramos importar para luego usarlo en la aplicacion
-# render_template es para renderizar el html desde la carpeta templates que la usa por defecto
-# Flask es el framework que estamos usando para crear la aplicacion web
+eventlet.monkey_patch()
 
 from flask import Flask, render_template, redirect, url_for, request, flash, session
 from flask_socketio import SocketIO, emit, join_room, leave_room
 
 import random
 import string
-import random
 from hashlib import sha256
 
 import psycopg2
 from dotenv import load_dotenv
 import os
+
 
 # Creamos la app Flask y le pasamos __name__ para que pueda encontrar rutas de archivos como templates y estáticos
 app = Flask(__name__)
@@ -26,6 +24,7 @@ def indexRuta():
 
 # Esto es para hacer la conexion con la base de datos
 numeros_usados_global = set()
+numeros_marcados_por_jugador = {}
 
 # Load environment variables from .env
 load_dotenv()
@@ -148,6 +147,7 @@ def registroRuta():
 
         except Exception as e:
             print(f"❌ Error al registrar usuario: {e}")
+            
             flash("Error al registrar el usuario. Intenta de nuevo.")
             return render_template('registro.html')
 
@@ -226,18 +226,26 @@ salas = {
 @socketio.on('unirse_sala')
 def unirse_sala(data):
     codigo_sala = data['codigo_sala']
-    username = data['username']
+    username = data['username'].strip().lower()
+
 
     if codigo_sala not in salas:
         salas[codigo_sala] = {'jugadores': [], 'listos': {}}
+
+    # ⚠️ Verificar que no haya más de 10 jugadores
+    if len(salas[codigo_sala]['jugadores']) >= 10:
+        emit('sala_llena', {'mensaje': 'La sala ya tiene 10 jugadores.'})
+        return
 
     if username not in salas[codigo_sala]['jugadores']:
         salas[codigo_sala]['jugadores'].append(username)
         salas[codigo_sala]['listos'][username] = False
 
+
     join_room(codigo_sala)
 
     emit_actualizacion_jugadores(codigo_sala)
+
 
 def emit_actualizacion_jugadores(codigo_sala):
     emit('actualizar_jugadores_listos', {
@@ -248,9 +256,12 @@ def emit_actualizacion_jugadores(codigo_sala):
 @socketio.on('jugador_listo')
 def handle_jugador_listo(data):
     codigo_sala = data['codigo_sala']
-    username = data['username']
+    username = data['username'].strip().lower()
 
-    if codigo_sala in salas and username in salas[codigo_sala]['listos']:
+    if codigo_sala in salas:
+        if username not in salas[codigo_sala]['jugadores']:
+            # No debería pasar, pero lo añadimos por seguridad
+            salas[codigo_sala]['jugadores'].append(username)
         salas[codigo_sala]['listos'][username] = True
 
         emit_actualizacion_jugadores(codigo_sala)
@@ -258,18 +269,20 @@ def handle_jugador_listo(data):
         jugadores = salas[codigo_sala]['jugadores']
         listos_dict = salas[codigo_sala]['listos']
 
-        todos_listos = all(listos_dict.get(j, False) for j in jugadores)
-        if todos_listos:
+        # Verifica que todos los jugadores estén listos
+        faltantes = [j for j in jugadores if not listos_dict.get(j, False)]
+        print(f"Faltan por estar listos: {faltantes}")
+
+        if len(faltantes) == 0:
             numeros_usados_sala = set()
             cartones_por_jugador = {}
 
             for jugador in jugadores:
-                carton = generar_carton_bingo_personalizado(numeros_usados_sala)
+                carton = generar_carton_bingo_personalizado()
                 cartones_por_jugador[jugador] = carton
 
             emit('partida_iniciada', {'cartones': cartones_por_jugador}, room=codigo_sala)
 
-            # Iniciar emisión de números en hilo separado
             thread = threading.Thread(target=emitir_numeros_periodicos, args=(codigo_sala,))
             thread.start()
 
@@ -277,7 +290,8 @@ def handle_jugador_listo(data):
 @socketio.on('salir_sala')
 def handle_salir_sala(data):
     codigo_sala = data['codigo_sala']
-    username = data['username']
+    username = data['username'].strip().lower()
+
 
     if codigo_sala in salas:
         if username in salas[codigo_sala]['jugadores']:
@@ -311,48 +325,33 @@ def logoutRuta():
     flash("✅ Has cerrado sesión exitosamente.")
     return redirect(url_for('indexRuta'))  # Redirigir al usuario a la página de inicio
 
-
-
-def generar_carton_bingo():
-    global numeros_usados_global
-
-
+def generar_carton_bingo_personalizado():
     rangos = {
         'B': range(1, 20),
         'I': range(20, 40),
         'N': range(40, 60),
         'G': range(60, 80),
-        'O': range(89, 100)
+        'O': range(80, 100)
     }
 
     columnas = {}
-    
+
     for letra, rango in rangos.items():
-
-        posibles = list(set(rango) - numeros_usados_global)
-
-        if len(posibles) < 5:
-            raise ValueError(f"No hay suficientes números disponibles para la columna {letra}")
-        seleccionados = random.sample(posibles, 5)
+        seleccionados = random.sample(rango, 5)
         columnas[letra] = seleccionados
-
-        numeros_usados_global.update(seleccionados)
-
-    # Construir la matriz del cartón (lista de filas)
 
     carton = []
     for i in range(5):
         fila = [columnas['B'][i], columnas['I'][i], columnas['N'][i], columnas['G'][i], columnas['O'][i]]
         carton.append(fila)
 
-    # Agregar 10 espacios en blanco aleatorios
-
     posiciones = [(i, j) for i in range(5) for j in range(5)]
-    blancos = random.sample(posiciones, 10)
+    blancos = random.sample(posiciones, 8)  # Aquí cambiamos de 10 a 8 espacios en blanco
     for i, j in blancos:
         carton[i][j] = ""
 
     return carton
+
 
 
 @app.route('/juego_individual', methods=['POST'])
@@ -367,13 +366,11 @@ def juego_individual():
         flash("⚠️ El número de jugadores debe estar entre 2 y 5.")
         return redirect(url_for('dashboardRuta'))
 
-    numeros_usados_global.clear()  # Limpiar números usados al comenzar una nueva partida
-    cartones = [generar_carton_bingo() for _ in range(cantidad_jugadores)]
+    numeros_usados = set()  # conjunto local para números usados en esta partida individual
+
+    cartones = [generar_carton_bingo_personalizado() for _ in range(cantidad_jugadores)]
 
     return render_template('juego_individual.html', cartones=cartones)
-
-
-
 
 import threading
 import time
@@ -383,7 +380,7 @@ numeros_emitidos_por_sala = {}
 
 def emitir_numeros_periodicos(codigo_sala):
     numeros_emitidos_por_sala[codigo_sala] = set()
-    todos_numeros = set(range(1, 91))
+    todos_numeros = set(range(1, 100))  # Números del 1 al 99
 
     while True:
         disponibles = list(todos_numeros - numeros_emitidos_por_sala[codigo_sala])
@@ -397,16 +394,30 @@ def emitir_numeros_periodicos(codigo_sala):
 
         socketio.emit('numero_nuevo', {'numero': numero}, room=codigo_sala)
 
-        time.sleep(5)  # Espera 5 segundos antes del siguiente número
+        time.sleep(3)  # Espera 3 segundos antes del siguiente número
 
+@socketio.on('numero_marcado')
+def handle_numero_marcado(data):
+    
+    codigo_sala = data.get('codigo_sala')
+    username = data.get('username', '').strip().lower()
+    numero = data.get('numero')
+    marcado = data.get('marcado')
 
+    # Reenviar a todos en la sala, incluyendo al que lo marcó
+    socketio.emit('numero_marcado', {
+        'codigo_sala': codigo_sala,
+        'username': username,
+        'numero': numero,
+        'marcado': marcado
+    }, room=codigo_sala)
 
-#si dejo el 404 el redirecionamiento no es automatico si lo quito es automatico
-#def paginaNoEncontrada(error):
-#   return redirect(url_for('indexRuta')), 404
+@socketio.on('linea_cantada')
+def handle_linea_cantada(data):
+    codigo_sala = data.get('codigo_sala')
+    username = data.get('username', '').strip().lower()
+    emit('linea_cantada', {'username': username}, room=codigo_sala)
 
-# Definimos la ruta de error 404, que es la que se carga cuando no se encuentra la pagina que se busca
-#app.register_error_handler(404, paginaNoEncontrada)
 
 if __name__ == '__main__':
     socketio.run(app, debug=True, port=5000)
