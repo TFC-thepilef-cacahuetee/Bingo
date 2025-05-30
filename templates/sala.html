@@ -341,19 +341,6 @@
             numerosSalidos.push(data.numero);
         });
 
-        socket.on('bingo_ganador', data => {
-            if (data.username !== username) {
-                alert(`🎉 ¡El jugador ${data.username} ha cantado ${data.tipo === 'linea' ? 'LÍNEA' : 'BINGO'}!`);
-
-                // Si alguien cantó línea, cambiamos a modo bingo
-                if (data.tipo === 'linea') {
-                    modoLinea = false;
-                    btnBingoLinea.textContent = 'Cantar Bingo';
-                    btnBingoLinea.style.backgroundColor = '#4CAF50';
-                }
-            }
-        });
-
         socket.on('numero_marcado', data => {
             const { numero, username: jugadorQueMarco, marcado } = data;
 
@@ -450,6 +437,18 @@
                 });
             }
         });
+
+        socket.on('ganador_bingo', data => {
+            const ganadorDiv = document.getElementById('ganadorAnuncio');
+            ganadorDiv.textContent = `🎉 ¡${data.username} ha ganado el BINGO! 🎉`;
+            ganadorDiv.style.display = 'block';
+
+            // Desactivar los botones para todos
+            btnBingoLinea.disabled = true;
+            const btnVerificarBingo = document.getElementById('btnVerificarBingo');
+            if (btnVerificarBingo) btnVerificarBingo.disabled = true;
+        });
+
 
 
 

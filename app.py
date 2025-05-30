@@ -436,5 +436,16 @@ def validar_bingo(carton):
 
     return False
 
+@socketio.on('bingo_completado')
+def handle_bingo_completado(data):
+    codigo_sala = data['codigo_sala']
+    username = data['username']
+    valido = data.get('valido', False)
+
+    if valido:
+        # Emitir a toda la sala el ganador
+        emit('ganador_bingo', {'username': username}, to=codigo_sala)
+
+
 if __name__ == '__main__':
     socketio.run(app, debug=True, port=5000)
