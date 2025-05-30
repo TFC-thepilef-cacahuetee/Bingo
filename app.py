@@ -441,6 +441,28 @@ def handle_bingo_cantado(data):
         # Si no es válido, puede emitir un mensaje o nada
         emit('bingo_invalido', {'msg': 'Bingo no válido'}, room=request.sid)
 
+def validar_bingo(carton):
+    # carton es lista 5x5, cada posición tiene número o "" para blanco
+    # Aquí debes verificar que el jugador marcó una línea completa.
+    # Para simplicidad, asumamos que el jugador envía el cartón con "" donde no está marcado, y "X" donde marcó.
+
+    # Ejemplo simple: Validar si alguna fila está toda marcada (con "X")
+    for fila in carton:
+        if all(casilla == "X" for casilla in fila):
+            return True
+
+    # Validar columnas
+    for col in range(5):
+        if all(fila[col] == "X" for fila in carton):
+            return True
+
+    # Validar diagonales
+    if all(carton[i][i] == "X" for i in range(5)):
+        return True
+    if all(carton[i][4 - i] == "X" for i in range(5)):
+        return True
+
+    return False
 
 
 
