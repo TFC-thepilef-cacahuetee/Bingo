@@ -7,6 +7,7 @@
     <script src="https://cdnjs.cloudflare.com/ajax/libs/socket.io/4.5.4/socket.io.min.js"></script>
     <link rel="stylesheet" href="{{ url_for('static', filename='sala.css') }}">
 </head>
+
 <body>
     <div class="sala-container">
         <h1>🎲 Sala de Bingo: <span id="codigoSala">{{ codigo_sala }}</span></h1>
@@ -15,6 +16,8 @@
 
         <button id="btnListo">Estoy Listo ✅</button>
         <button id="salirSalaBtn">Salir de la Sala ❌</button>
+
+        <div id="ganadorAnuncio" class="ganador-anuncio" style="display: none;"></div>
 
         <div id="botonesAccion" class="botones-accion" style="display: none;">
             <button id="btnBingoLinea">Cantar Línea</button>
@@ -381,21 +384,30 @@
 
 
         socket.on('bingo_completado', data => {
-            if (data.username !== username) {
-                const mensaje = data.tipo === 'linea'
-                    ? `🎉 ¡${data.username} ha cantado LÍNEA! (${data.cantidad} línea(s))`
-                    : `🏆 ¡${data.username} ha cantado BINGO!`;
+            const mensaje = data.tipo === 'linea'
+                ? `🎉 ¡${data.username} ha cantado LÍNEA! (${data.cantidad} línea(s))`
+                : `🏆 ¡${data.username} ha cantado BINGO!`;
 
-                mostrarMensaje('info', mensaje);
+            mostrarMensaje('info', mensaje);
 
-                if (data.tipo === 'linea' && !lineaCantada) {
-                    modoLinea = false;
-                    lineaCantada = true;
-                    btnBingoLinea.textContent = 'Cantar Bingo';
-                    btnBingoLinea.style.backgroundColor = '#4CAF50';
-                }
+            if (data.tipo === 'linea' && !lineaCantada) {
+                modoLinea = false;
+                lineaCantada = true;
+                btnBingoLinea.textContent = 'Cantar Bingo';
+                btnBingoLinea.style.backgroundColor = '#4CAF50';
+            }
+
+            // Mostrar quién ganó el bingo
+            if (data.tipo === 'bingo') {
+                document.getElementById('ganadorAnuncio').textContent = `🎉 ¡${data.username} ha ganado el BINGO! 🎉`;
+                document.getElementById('ganadorAnuncio').style.display = 'block';
+
+                // Desactivar botones para todos
+                btnVerificarBingo.disabled = true;
+                btnBingoLinea.disabled = true;
             }
         });
+
 
         socket.on('intento_invalido', data => {
             if (data.username !== username) {
@@ -409,12 +421,23 @@
 
             if (todosSalidos && verificarBingoCompleto(carton)) {
                 mostrarMensaje('exito', '🎉 ¡BINGO VÁLIDO! ¡Eres el ganador!');
+
+                // Mostrar anuncio de ganador
+                document.getElementById('ganadorAnuncio').textContent = `🎉 ¡${username} ha ganado el BINGO! 🎉`;
+                document.getElementById('ganadorAnuncio').style.display = 'block';
+
+                // Emitir al servidor
                 socket.emit('bingo_completado', {
                     codigo_sala: codigoSala,
                     username: username,
                     tipo: 'bingo',
                     valido: true
                 });
+
+                // Desactivar botones para evitar nuevos bingos
+                btnVerificarBingo.disabled = true;
+                btnBingoLinea.disabled = true;
+
             } else {
                 const noSalidos = numerosMarcados.filter(n => !numerosSalidos.includes(n));
                 mostrarMensaje('error', '❌ Aún hay números no salidos: ' + noSalidos.join(', '));
@@ -427,6 +450,7 @@
                 });
             }
         });
+
 
 
     </script>
