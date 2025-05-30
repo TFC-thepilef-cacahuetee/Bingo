@@ -1,0 +1,4 @@
+# utils/__init__.py
+# Paquete para utilidades varias
+from .bingo import generar_carton_bingo
+from .threading import emitir_numeros_periodicos
