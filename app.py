@@ -352,13 +352,14 @@ numeros_emitidos_por_sala = {}
 
 def emitir_numeros_periodicos(codigo_sala):
     numeros_emitidos_por_sala[codigo_sala] = set()
-    todos_numeros = set(range(1, 100))  # Números del 1 al 99
+    partida_activa_por_sala[codigo_sala] = True
+    todos_numeros = set(range(1, 100))
 
-    while True:
+    while partida_activa_por_sala.get(codigo_sala, False):
         disponibles = list(todos_numeros - numeros_emitidos_por_sala[codigo_sala])
         if not disponibles:
-            # Ya se emitieron todos los números, se puede terminar el ciclo
             socketio.emit('fin_partida', room=codigo_sala)
+            partida_activa_por_sala[codigo_sala] = False
             break
         
         numero = random.choice(disponibles)
@@ -366,7 +367,7 @@ def emitir_numeros_periodicos(codigo_sala):
 
         socketio.emit('numero_nuevo', {'numero': numero}, room=codigo_sala)
 
-        time.sleep(0.5)  # Espera 3 segundos antes del siguiente número
+        time.sleep(3)
 
 @socketio.on('numero_marcado')
 def handle_numero_marcado(data):
@@ -437,10 +438,16 @@ def validar_bingo(carton):
 
     return False
 
+# Variable global para controlar la emisión por sala
+partida_activa_por_sala = {}
+
 @socketio.on('bingo_completado')
 def handle_bingo_completado(data):
     codigo_sala = data.get('codigo_sala')
     username = data.get('username')
+
+    # Parar la emisión de números para esta sala
+    partida_activa_por_sala[codigo_sala] = False
 
     try:
         connection = psycopg2.connect(
@@ -483,7 +490,6 @@ def handle_bingo_completado(data):
 
     # Notificar a todos en la sala el ganador
     emit('anunciar_ganador', {'ganador': username}, room=codigo_sala)
-
 
 if __name__ == '__main__':
     socketio.run(app, debug=True, port=5000)
