@@ -413,20 +413,24 @@ def handle_bingo_cantado(data):
             cursor.execute("SELECT id FROM usuarios WHERE username = %s", (username,))
             user_record = cursor.fetchone()
 
-            if user_record:
-                user_id = user_record[0]
+            if not user_record:
+                print(f"Usuario {username} no encontrado.")
+                emit('error', {'msg': 'Usuario no encontrado en base de datos.'}, room=request.sid)
+                return
 
-                # Actualizar la tabla salas para poner el ganador
-                cursor.execute(
-                    "UPDATE salas SET ganador_id = %s, estado = 'finalizada' WHERE id = %s",
-                    (user_id, codigo_sala)
-                )
-                connection.commit()
-            else:
-                print(f"Usuario {username} no encontrado para guardar ganador.")
+            user_id = user_record[0]
+
+            # Actualizar solo el ganador_id en la sala, sin cambiar el estado
+            cursor.execute(
+                "UPDATE salas SET ganador_id = %s WHERE id = %s",
+                (user_id, codigo_sala)
+            )
+            connection.commit()
+            print(f"Ganador guardado en sala {codigo_sala}: usuario {username} (id {user_id})")
 
         except Exception as e:
             print(f"Error guardando ganador en sala: {e}")
+            emit('error', {'msg': 'Error al guardar ganador en la base de datos.'}, room=request.sid)
 
         finally:
             if cursor:
@@ -434,10 +438,8 @@ def handle_bingo_cantado(data):
             if connection:
                 connection.close()
 
-        # Anunciar ganador a todos en la sala
         emit('anunciar_ganador', {'ganador': username}, room=codigo_sala)
 
-        # Resetear estado 'listo' para todos los jugadores de la sala
         if codigo_sala in salas:
             for jugador in salas[codigo_sala]['listos']:
                 salas[codigo_sala]['listos'][jugador] = False
