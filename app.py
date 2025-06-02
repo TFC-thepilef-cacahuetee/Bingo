@@ -367,7 +367,7 @@ def emitir_numeros_periodicos(codigo_sala):
 
         socketio.emit('numero_nuevo', {'numero': numero}, room=codigo_sala)
 
-        time.sleep(3)
+        time.sleep(0.3)
 
 @socketio.on('numero_marcado')
 def handle_numero_marcado(data):
