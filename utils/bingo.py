@@ -1,5 +1,4 @@
 import random
-import threading
 import time
 from datetime import datetime
 from flask import session, redirect, url_for, flash
@@ -33,26 +32,38 @@ def generar_carton_bingo_personalizado():
 
     return carton
 
-def emitir_numeros_periodicos(codigo_sala, socketio):
-    numeros_emitidos_por_sala[codigo_sala] = []
-    todos_numeros = set(range(1, 100))
+def emitir_numeros_periodicos(codigo_sala, socketio, salas):
+    """
+    Emite números de bingo periódicamente a todos los jugadores de la sala.
+    Se detiene si la sala queda vacía o se acaban los números.
+    """
+    try:
+        numeros_emitidos_por_sala[codigo_sala] = []
+        todos_numeros = set(range(1, 100))
 
-    while True:
-        emitidos = set(n for n, _ in numeros_emitidos_por_sala[codigo_sala])
-        disponibles = list(todos_numeros - emitidos)
+        while True:
+            if codigo_sala not in salas or not salas[codigo_sala]['jugadores']:
+                print(f"Parando emisión para sala {codigo_sala} (sin jugadores)")
+                break
 
-        if not disponibles:
-            guardar_sala_y_numeros(codigo_sala, numeros_emitidos_por_sala[codigo_sala])
-            socketio.emit('fin_partida', room=codigo_sala)
-            break
+            emitidos = set(n for n, _ in numeros_emitidos_por_sala[codigo_sala])
+            disponibles = list(todos_numeros - emitidos)
 
-        numero = random.choice(disponibles)
-        timestamp = datetime.utcnow()
-        numeros_emitidos_por_sala[codigo_sala].append((numero, timestamp))
+            if not disponibles:
+                guardar_sala_y_numeros(codigo_sala, numeros_emitidos_por_sala[codigo_sala])
+                socketio.emit('fin_partida', room=codigo_sala)
+                break
 
-        socketio.emit('numero_nuevo', {'numero': numero}, room=codigo_sala)
-
-        time.sleep(3)
+            numero = random.choice(disponibles)
+            timestamp = datetime.utcnow()
+            numeros_emitidos_por_sala[codigo_sala].append((numero, timestamp))
+            socketio.emit('numero_nuevo', {'numero': numero}, room=codigo_sala)
+            time.sleep(3)
+    except Exception as e:
+        print(f"❌ Error en emisión periódica de {codigo_sala}: {e}")
+    finally:
+        if codigo_sala in numeros_emitidos_por_sala:
+            del numeros_emitidos_por_sala[codigo_sala]
 
 def guardar_sala_y_numeros(codigo_sala, numeros_con_tiempo):
     try:

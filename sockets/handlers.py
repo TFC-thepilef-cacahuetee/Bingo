@@ -6,8 +6,9 @@ from utils.bingo import (
     validar_bingo, guardar_sala_y_numeros
 )
 
+# Variables globales para salas y control de hilos
 salas = {}
-numeros_emitidos_por_sala = {}
+hilos_emitir = {}  # <--- Añade este diccionario para controlar los hilos
 
 def register_socket_events(socketio):
     @socketio.on('unirse_sala')
@@ -36,7 +37,6 @@ def register_socket_events(socketio):
 
         if codigo_sala in salas:
             if username not in salas[codigo_sala]['jugadores']:
-                # No debería pasar, pero lo añadimos por seguridad
                 salas[codigo_sala]['jugadores'].append(username)
             salas[codigo_sala]['listos'][username] = True
 
@@ -45,23 +45,23 @@ def register_socket_events(socketio):
             jugadores = salas[codigo_sala]['jugadores']
             listos_dict = salas[codigo_sala]['listos']
 
-        # Verifica que todos los jugadores estén listos
-        faltantes = [j for j in jugadores if not listos_dict.get(j, False)]
-        print(f"Faltan por estar listos: {faltantes}")
+            # Verifica que todos los jugadores estén listos
+            faltantes = [j for j in jugadores if not listos_dict.get(j, False)]
+            print(f"Faltan por estar listos: {faltantes}")
 
-        if len(faltantes) == 0:
-            numeros_usados_sala = set()
-            cartones_por_jugador = {}
+            if len(faltantes) == 0:
+                cartones_por_jugador = {}
+                for jugador in jugadores:
+                    carton = generar_carton_bingo_personalizado()
+                    cartones_por_jugador[jugador] = carton
 
-            for jugador in jugadores:
-                carton = generar_carton_bingo_personalizado()
-                cartones_por_jugador[jugador] = carton
+                emit('partida_iniciada', {'cartones': cartones_por_jugador}, room=codigo_sala)
 
-            emit('partida_iniciada', {'cartones': cartones_por_jugador}, room=codigo_sala)
-
-            thread = threading.Thread(target=emitir_numeros_periodicos, args=(codigo_sala,))
-            thread.start()
-
+                # --- Cambia aquí: solo lanza un hilo por sala y pasa salas como argumento ---
+                if codigo_sala not in hilos_emitir or not hilos_emitir[codigo_sala].is_alive():
+                    thread = threading.Thread(target=emitir_numeros_periodicos, args=(codigo_sala, socketio, salas))
+                    hilos_emitir[codigo_sala] = thread
+                    thread.start()
 
     @socketio.on('salir_sala')
     def salir_sala(data):
