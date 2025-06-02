@@ -43,7 +43,7 @@ def crear_sala():
     except Exception as e:
         print(f"❌ Error al crear sala: {e}")
         flash("⚠️ Error al crear la sala. Intenta de nuevo.")
-        return redirect(url_for('dashboard'))
+        return redirect(url_for('auth.dashboard'))
 
     finally:
         close_db(cursor, connection)

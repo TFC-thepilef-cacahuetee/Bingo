@@ -27,7 +27,7 @@ def registro():
             )
             connection.commit()
             flash("✅ Registro exitoso. Ahora puedes iniciar sesión.")
-            return redirect(url_for('login'))
+            return redirect(url_for('auth.login'))
         
         except Exception as e:
             print(f"❌ Error al registrar usuario: {e}")
@@ -62,7 +62,7 @@ def login():
                 session['user_id'] = user[0]
                 session['username'] = user[1]
                 flash("✅ Sesión iniciada correctamente.")
-                return redirect(url_for('dashboard'))
+                return redirect(url_for('auth.dashboard'))
             else:
                 flash("⚠️ Usuario o DNI incorrectos.")
 
