@@ -62,7 +62,7 @@ def login():
                 session['user_id'] = user[0]
                 session['username'] = user[1]
                 flash("✅ Sesión iniciada correctamente.")
-                return redirect(url_for('auth.dashboard'))
+                return redirect(url_for('dashboard.dashboard'))
             else:
                 flash("⚠️ Usuario o DNI incorrectos.")
 
