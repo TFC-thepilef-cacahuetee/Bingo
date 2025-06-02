@@ -36,28 +36,32 @@ def register_socket_events(socketio):
 
         if codigo_sala in salas:
             if username not in salas[codigo_sala]['jugadores']:
+                # No debería pasar, pero lo añadimos por seguridad
                 salas[codigo_sala]['jugadores'].append(username)
-
             salas[codigo_sala]['listos'][username] = True
+
             emit_actualizacion_jugadores(codigo_sala)
 
             jugadores = salas[codigo_sala]['jugadores']
             listos_dict = salas[codigo_sala]['listos']
-            faltantes = [j for j in jugadores if not listos_dict.get(j, False)]
-            print(f"Faltan por estar listos: {faltantes}")
 
-            if len(faltantes) == 0:
-                numeros_usados_sala = set()
-                cartones_por_jugador = {}
+        # Verifica que todos los jugadores estén listos
+        faltantes = [j for j in jugadores if not listos_dict.get(j, False)]
+        print(f"Faltan por estar listos: {faltantes}")
 
-                for jugador in jugadores:
-                    carton = generar_carton_bingo_personalizado()
-                    cartones_por_jugador[jugador] = carton
+        if len(faltantes) == 0:
+            numeros_usados_sala = set()
+            cartones_por_jugador = {}
 
-                emit('partida_iniciada', {'cartones': cartones_por_jugador}, room=codigo_sala)
+            for jugador in jugadores:
+                carton = generar_carton_bingo_personalizado()
+                cartones_por_jugador[jugador] = carton
 
-                thread = threading.Thread(target=emitir_numeros_periodicos, args=(codigo_sala,))
-                thread.start()
+            emit('partida_iniciada', {'cartones': cartones_por_jugador}, room=codigo_sala)
+
+            thread = threading.Thread(target=emitir_numeros_periodicos, args=(codigo_sala,))
+            thread.start()
+
 
     @socketio.on('salir_sala')
     def salir_sala(data):

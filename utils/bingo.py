@@ -65,7 +65,7 @@ def guardar_sala_y_numeros(codigo_sala, numeros_con_tiempo):
             VALUES (%s, %s, %s, %s, %s)
             ON CONFLICT (id) DO NOTHING
             """,
-            (codigo_sala, session.get('user_id'), 'finalizada', datetime.utcnow(), None)
+            (codigo_sala, None, 'finalizada', datetime.utcnow(), None)
         )
 
         datos = [
@@ -79,14 +79,12 @@ def guardar_sala_y_numeros(codigo_sala, numeros_con_tiempo):
         cursor.executemany(insert_query, datos)
 
         connection.commit()
-
-        flash(f"✅ Sala y números guardados: {codigo_sala}")
-        return redirect(url_for('dashboard.sala', codigo_sala=codigo_sala))
+        return True
 
     except Exception as e:
         print(f"❌ Error al guardar en la BD: {e}")
         flash("⚠️ Error al guardar la sala o los números.")
-        return redirect(url_for('dashboard.dashboard'))
+        return False
 
     finally:
         close_db(cursor, connection)

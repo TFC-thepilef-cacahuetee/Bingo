@@ -7,7 +7,6 @@ from config import SECRET_KEY
 from routes.auth import auth_bp
 from routes.dashboard import dashboard_bp
 from sockets.handlers import register_socket_events
-from config import SECRET_KEY
 
 app = Flask(__name__)
 app.secret_key = SECRET_KEY
