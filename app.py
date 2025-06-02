@@ -366,7 +366,7 @@ def emitir_numeros_periodicos(codigo_sala):
 
         socketio.emit('numero_nuevo', {'numero': numero}, room=codigo_sala)
 
-        time.sleep(3)  # Espera 3 segundos antes del siguiente número
+        time.sleep(0.5)  # Espera 3 segundos antes del siguiente número
 
 @socketio.on('numero_marcado')
 def handle_numero_marcado(data):
@@ -394,58 +394,23 @@ def handle_linea_cantada(data):
 def handle_bingo_cantado(data):
     codigo_sala = data.get('codigo_sala')
     username = data.get('username', '').strip().lower()
-    carton_jugador = data.get('carton')
+    carton_jugador = data.get('carton')  # asumo que el jugador manda su cartón para validar
 
-    bingo_valido = validar_bingo(carton_jugador)
+    # Aquí pones tu lógica para validar el bingo del jugador
+    bingo_valido = validar_bingo(carton_jugador)  # define esta función con tu lógica
 
     if bingo_valido:
-        try:
-            connection = psycopg2.connect(
-                user=USER,
-                password=PASSWORD,
-                host=HOST,
-                port=PORT,
-                dbname=DBNAME
-            )
-            cursor = connection.cursor()
-
-            # Obtener user_id del username
-            cursor.execute("SELECT id FROM usuarios WHERE username = %s", (username,))
-            user_record = cursor.fetchone()
-
-            if not user_record:
-                print(f"Usuario {username} no encontrado.")
-                emit('error', {'msg': 'Usuario no encontrado en base de datos.'}, room=request.sid)
-                return
-
-            user_id = user_record[0]
-
-            # Actualizar solo el ganador_id en la sala, sin cambiar el estado
-            cursor.execute(
-                "UPDATE salas SET ganador_id = %s WHERE id = %s",
-                (user_id, codigo_sala)
-            )
-            connection.commit()
-            print(f"Ganador guardado en sala {codigo_sala}: usuario {username} (id {user_id})")
-
-        except Exception as e:
-            print(f"Error guardando ganador en sala: {e}")
-            emit('error', {'msg': 'Error al guardar ganador en la base de datos.'}, room=request.sid)
-
-        finally:
-            if cursor:
-                cursor.close()
-            if connection:
-                connection.close()
-
+        # Anunciar ganador a todos
         emit('anunciar_ganador', {'ganador': username}, room=codigo_sala)
 
+        # Resetear estado 'listo' para todos los jugadores de la sala
         if codigo_sala in salas:
             for jugador in salas[codigo_sala]['listos']:
                 salas[codigo_sala]['listos'][jugador] = False
             emit_actualizacion_jugadores(codigo_sala)
 
     else:
+        # Si no es válido, puede emitir un mensaje o nada
         emit('bingo_invalido', {'msg': 'Bingo no válido'}, room=request.sid)
 
 
@@ -474,13 +439,50 @@ def validar_bingo(carton):
 
 @socketio.on('bingo_completado')
 def handle_bingo_completado(data):
-    codigo_sala = data['codigo_sala']
-    username = data['username']
-    valido = data.get('valido', False)
+    codigo_sala = data.get('codigo_sala')
+    username = data.get('username')
 
-    if valido:
-        # Emitir a toda la sala el ganador
-        emit('ganador_bingo', {'username': username}, to=codigo_sala)
+    try:
+        connection = psycopg2.connect(
+            user=USER,
+            password=PASSWORD,
+            host=HOST,
+            port=PORT,
+            dbname=DBNAME
+        )
+        cursor = connection.cursor()
+
+        # Obtener user_id del username
+        cursor.execute("SELECT id FROM usuarios WHERE username = %s", (username,))
+        user_record = cursor.fetchone()
+
+        if not user_record:
+            emit('error', {'msg': 'Usuario no encontrado en base de datos.'}, room=request.sid)
+            return
+
+        user_id = user_record[0]
+
+        # Actualizar el ganador de la sala
+        cursor.execute(
+            "UPDATE salas SET ganador_id = %s WHERE id = %s",
+            (user_id, codigo_sala)
+        )
+        connection.commit()
+
+        print(f"Ganador guardado en sala {codigo_sala}: usuario {username} (id {user_id})")
+
+    except Exception as e:
+        print(f"Error guardando ganador en sala: {e}")
+        emit('error', {'msg': 'Error al guardar ganador en la base de datos.'}, room=request.sid)
+
+    finally:
+        if cursor:
+            cursor.close()
+        if connection:
+            connection.close()
+
+    # Notificar a todos en la sala el ganador
+    emit('anunciar_ganador', {'ganador': username}, room=codigo_sala)
 
 
 if __name__ == '__main__':
