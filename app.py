@@ -394,13 +394,47 @@ def handle_linea_cantada(data):
 def handle_bingo_cantado(data):
     codigo_sala = data.get('codigo_sala')
     username = data.get('username', '').strip().lower()
-    carton_jugador = data.get('carton')  # asumo que el jugador manda su cartón para validar
+    carton_jugador = data.get('carton')
 
-    # Aquí pones tu lógica para validar el bingo del jugador
-    bingo_valido = validar_bingo(carton_jugador)  # define esta función con tu lógica
+    bingo_valido = validar_bingo(carton_jugador)
 
     if bingo_valido:
-        # Anunciar ganador a todos
+        try:
+            connection = psycopg2.connect(
+                user=USER,
+                password=PASSWORD,
+                host=HOST,
+                port=PORT,
+                dbname=DBNAME
+            )
+            cursor = connection.cursor()
+
+            # Obtener user_id del username
+            cursor.execute("SELECT id FROM usuarios WHERE username = %s", (username,))
+            user_record = cursor.fetchone()
+
+            if user_record:
+                user_id = user_record[0]
+
+                # Actualizar la tabla salas para poner el ganador
+                cursor.execute(
+                    "UPDATE salas SET ganador_id = %s, estado = 'finalizada' WHERE id = %s",
+                    (user_id, codigo_sala)
+                )
+                connection.commit()
+            else:
+                print(f"Usuario {username} no encontrado para guardar ganador.")
+
+        except Exception as e:
+            print(f"Error guardando ganador en sala: {e}")
+
+        finally:
+            if cursor:
+                cursor.close()
+            if connection:
+                connection.close()
+
+        # Anunciar ganador a todos en la sala
         emit('anunciar_ganador', {'ganador': username}, room=codigo_sala)
 
         # Resetear estado 'listo' para todos los jugadores de la sala
@@ -410,8 +444,8 @@ def handle_bingo_cantado(data):
             emit_actualizacion_jugadores(codigo_sala)
 
     else:
-        # Si no es válido, puede emitir un mensaje o nada
         emit('bingo_invalido', {'msg': 'Bingo no válido'}, room=request.sid)
+
 
 def validar_bingo(carton):
     # carton es lista 5x5, cada posición tiene número o "" para blanco
