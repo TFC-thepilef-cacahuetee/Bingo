@@ -33,7 +33,8 @@ def registro():
             print(f"❌ Error al registrar usuario: {e}")
             flash("⚠️ Error al registrar el usuario.")
         finally:
-            close_db(cursor, connection)
+            if cursor is not None and connection is not None:
+                close_db(cursor, connection)
 
     return render_template('registro.html')
 
@@ -47,6 +48,9 @@ def login():
 
         # Hashear el DNI ingresado
         dni_hash = sha256(dni_plano.encode()).hexdigest()
+        
+        cursor = None
+        connection = None
 
         try:
             # Obtenemos una conexión a la base de datos
@@ -71,7 +75,8 @@ def login():
             flash("⚠️ Error al iniciar sesión.")
 
         finally:
-            close_db(cursor, connection)
+            if cursor is not None and connection is not None:
+                close_db(cursor, connection)
 
     return render_template('login.html')
 
