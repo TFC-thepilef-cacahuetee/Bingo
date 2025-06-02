@@ -129,7 +129,7 @@ def register_socket_events(socketio):
 
 # Función auxiliar usada varias veces
 def emit_actualizacion_jugadores(codigo_sala):
-    emit('actualizar_jugadores', {
+    emit('actualizar_jugadores_listos', {
         'jugadores': salas[codigo_sala]['jugadores'],
         'listos': salas[codigo_sala]['listos']
     }, room=codigo_sala)
