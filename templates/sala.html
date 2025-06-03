@@ -21,7 +21,7 @@
 
         <div id="botonesAccion" class="botones-accion" style="display: none;">
             <button id="btnBingoLinea">Cantar Línea</button>
-            <button id="btnVerificarBingo" disabled>Verificar Bingo</button>
+            <button id="btnVerificarBingo" disabled>Cantar Bingo</button>
         </div>
 
         <div id="mensajeValidacion" class="mensaje-validacion"></div>
@@ -169,75 +169,39 @@
                 socket.emit('intento_invalido', {
                     codigo_sala: codigoSala,
                     username: username,
-                    tipo: modoLinea ? 'linea' : 'bingo',
+                    tipo: 'linea',
                     valido: false,
                     motivo: 'Números no salidos: ' + numerosMarcados.filter(n => !numerosSalidos.includes(n)).join(', ')
-                });
+            });
+            return;
+        }
 
-                return;
-            }
+        const lineasCompletas = verificarLineasCompletas(carton);
 
-            if (modoLinea) {
-                // Verificar solo líneas horizontales
-                const lineasCompletas = verificarLineasCompletas(carton);
+        if (lineasCompletas > 0) {
+            mostrarMensaje('exito', '¡LÍNEA VÁLIDA! 🎉');
+            socket.emit('bingo_completado', {
+                codigo_sala: codigoSala,
+                username: username,
+                tipo: 'linea',
+                cantidad: lineasCompletas,
+                valido: true
+            });
 
-                if (lineasCompletas > 0) {
-                    mostrarMensaje('exito', '¡LÍNEA VÁLIDA! 🎉');
-                    socket.emit('bingo_completado', {
-                        codigo_sala: codigoSala,
-                        username: username,
-                        tipo: 'linea',
-                        cantidad: lineasCompletas,
-                        valido: true
-                    });
+            btnBingoLinea.disabled = true;
+            btnVerificarBingo.disabled = false; // Activamos botón de BINGO
+        } else {
+            mostrarMensaje('error', '⚠️ No tienes ninguna línea horizontal completa.');
+            socket.emit('intento_invalido', {
+                codigo_sala: codigoSala,
+                username: username,
+                tipo: 'linea',
+                valido: false,
+                motivo: 'No hay línea horizontal completa'
+            });
+        }
+    });
 
-                    // Cambiar a modo bingo después de cantar línea
-                    modoLinea = false;
-                    lineaCantada = true;
-
-                    // Notificar a todos que cambien a modo bingo
-                    socket.emit('cambio_a_bingo', { codigo_sala: codigoSala });
-                } else {
-                    mostrarMensaje('error', '⚠️ No tienes ninguna línea horizontal completa.');
-                    socket.emit('intento_invalido', {
-                        codigo_sala: codigoSala,
-                        username: username,
-                        tipo: 'linea',
-                        valido: false,
-                        motivo: 'No hay línea horizontal completa'
-                    });
-                }
-            } else {
-                // Verificar bingo completo
-                const bingoCompleto = verificarBingoCompleto(carton);
-
-                if (bingoCompleto) {
-                    mostrarMensaje('exito', '¡BINGO VÁLIDO! 🎉');
-                    socket.emit('bingo_completado', {
-                        codigo_sala: codigoSala,
-                        username: username,
-                        tipo: 'bingo',
-                        valido: true
-                    });
-                } else {
-                    mostrarMensaje('error', '⚠️ No tienes un bingo completo.');
-                    socket.emit('intento_invalido', {
-                        codigo_sala: codigoSala,
-                        username: username,
-                        tipo: 'bingo',
-                        valido: false,
-                        motivo: 'Cartón no completo'
-                    });
-                }
-            }
-            const btnVerificarBingo = document.getElementById('btnVerificarBingo');
-            const totalCeldas = carton.querySelectorAll('.bingo-cell:not(.free)').length;
-            const marcados = carton.querySelectorAll('.bingo-cell.marked:not(.free)').length;
-
-            btnBingoLinea.disabled = marcados < 5;
-            btnVerificarBingo.disabled = marcados !== totalCeldas;
-
-        });
 
         // Nuevos listeners para manejar los eventos de cambi
         socket.on('cambio_a_bingo', () => {
