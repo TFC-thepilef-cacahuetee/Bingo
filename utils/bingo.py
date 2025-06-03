@@ -1,7 +1,6 @@
 import random
 import time
 from datetime import datetime
-from flask import session, redirect, url_for, flash
 from db import get_db_connection, close_db
 
 # 🔁 Variable global para almacenar los números emitidos por sala
@@ -94,7 +93,6 @@ def guardar_sala_y_numeros(codigo_sala, numeros_con_tiempo):
 
     except Exception as e:
         print(f"❌ Error al guardar en la BD: {e}")
-        flash("⚠️ Error al guardar la sala o los números.")
         return False
 
     finally:

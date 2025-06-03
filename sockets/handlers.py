@@ -112,6 +112,11 @@ def register_socket_events(socketio):
             emit('anunciar_ganador', {'ganador': username}, room=codigo_sala)
 
             if codigo_sala in salas:
+                numeros_con_tiempo = salas[codigo_sala].get('numeros_llamados', [])
+                exito = guardar_sala_y_numeros(codigo_sala, numeros_con_tiempo)
+                if not exito:
+                    print("❌ Error guardando números en la base de datos")
+                
                 for jugador in salas[codigo_sala]['listos']:
                     salas[codigo_sala]['listos'][jugador] = False
                 emit_actualizacion_jugadores(codigo_sala)
