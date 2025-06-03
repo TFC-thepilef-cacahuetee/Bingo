@@ -49,7 +49,7 @@ def emitir_numeros_periodicos(codigo_sala, socketio, salas):
             disponibles = list(todos_numeros - emitidos)
 
             if not disponibles:
-                guardar_sala_y_numeros(codigo_sala, numeros_emitidos_por_sala[codigo_sala])
+                guardar_sala_y_numeros(codigo_sala, numeros_emitidos_por_sala[codigo_sala], ganador=username)
                 socketio.emit('fin_partida', room=codigo_sala)
                 break
 
@@ -64,7 +64,7 @@ def emitir_numeros_periodicos(codigo_sala, socketio, salas):
         if codigo_sala in numeros_emitidos_por_sala:
             del numeros_emitidos_por_sala[codigo_sala]
 
-def guardar_sala_y_numeros(codigo_sala, numeros_con_tiempo):
+def guardar_sala_y_numeros(codigo_sala, numeros_con_tiempo, ganador=None):
     try:
         connection = get_db_connection()
         cursor = connection.cursor()
@@ -75,7 +75,7 @@ def guardar_sala_y_numeros(codigo_sala, numeros_con_tiempo):
             VALUES (%s, %s, %s, %s, %s)
             ON CONFLICT (id) DO NOTHING
             """,
-            (codigo_sala, None, 'finalizada', datetime.utcnow(), None)
+            (codigo_sala, None, 'finalizada', datetime.utcnow(), ganador)
         )
 
         datos = [
