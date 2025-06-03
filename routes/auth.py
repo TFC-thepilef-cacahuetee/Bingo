@@ -22,8 +22,8 @@ def registro():
             cursor = connection.cursor()
             # Insertamos el nuevo usuario en la base de datos
             cursor.execute(
-                "INSERT INTO usuarios (username, dni) VALUES (%s, %s)",
-                (username, dni_hash)
+                "INSERT INTO usuarios (username, dni, mayor_edad) VALUES (%s, %s, %s)",
+                (username, dni_hash, mayor_edad)
             )
             connection.commit()
             flash("✅ Registro exitoso. Ahora puedes iniciar sesión.")
