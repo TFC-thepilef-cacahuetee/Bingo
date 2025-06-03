@@ -30,8 +30,8 @@ def crear_sala():
 
         # Insertamos la nueva sala en la base de datos
         cursor.execute(
-            "INSERT INTO salas (id, creador_id, estado) VALUES (%s, %s, %s)",
-            (codigo_sala, session['user_id'], 'esperando')
+            "INSERT INTO salas (id, estado) VALUES (%s, %s)",
+            (codigo_sala, 'esperando')
         )
         connection.commit()
         flash(f"✅ Sala creada: {codigo_sala}")
