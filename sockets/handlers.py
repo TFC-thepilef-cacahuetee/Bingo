@@ -7,6 +7,7 @@ from utils.bingo import (
     generar_carton_bingo_personalizado, emitir_numeros_periodicos,
     validar_bingo, guardar_sala_y_numeros
 )
+from db import get_db_connection, close_db
 
 # Variables globales para salas y control de hilos
 salas = {}
@@ -28,6 +29,33 @@ def register_socket_events(socketio):
         if username not in salas[codigo_sala]['jugadores']:
             salas[codigo_sala]['jugadores'].append(username)
             salas[codigo_sala]['listos'][username] = False
+
+            # 🔽 NUEVO: Insertar jugador en la tabla jugadores_sala
+            try:
+                conn = get_db_connection()
+                cursor = conn.cursor()
+
+                # Obtener el ID del usuario desde su username
+                cursor.execute("SELECT id FROM usuarios WHERE username = %s", (username,))
+                resultado = cursor.fetchone()
+
+                if resultado:
+                    usuario_id = resultado[0]
+
+                    cursor.execute("""
+                        INSERT INTO jugadores_sala (sala_id, usuario_id)
+                        VALUES (%s, %s)
+                        ON CONFLICT DO NOTHING
+                    """, (codigo_sala, usuario_id))
+
+                    conn.commit()
+                else:
+                    print(f"⚠️ No se encontró usuario con username: {username}")
+
+            except Exception as e:
+                print(f"❌ Error al insertar en jugadores_sala: {e}")
+            finally:
+                close_db(cursor, conn)
 
         join_room(codigo_sala)
         emit_actualizacion_jugadores(codigo_sala)
