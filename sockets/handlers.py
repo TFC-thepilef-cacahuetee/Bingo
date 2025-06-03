@@ -13,6 +13,8 @@ from utils.bingo import (
 # Variables globales para salas y control de hilos
 salas = {}
 hilos_emitir = {}  # <--- Añade este diccionario para controlar los hilos
+# Variable global para controlar la emisión por sala
+partida_activa_por_sala = {}
 
 def register_socket_events(socketio):
     @socketio.on('unirse_sala')
@@ -157,12 +159,46 @@ def register_socket_events(socketio):
 
     @socketio.on('bingo_completado')
     def bingo_completado(data):
-        codigo_sala = data['codigo_sala']
-        username = data['username']
-        valido = data.get('valido', False)
+        codigo_sala = data.get('codigo_sala')
+        username = data.get('username')
 
-        if valido:
-            emit('ganador_bingo', {'username': username}, to=codigo_sala)
+        # Parar la emisión de números para esta sala
+        partida_activa_por_sala[codigo_sala] = False
+
+        try:
+            conn = get_db_connection()
+            cursor = conn.cursor()
+
+            # Obtener user_id del username
+            cursor.execute("SELECT id FROM usuarios WHERE username = %s", (username,))
+            user_record = cursor.fetchone()
+
+            if not user_record:
+                emit('error', {'msg': 'Usuario no encontrado en base de datos.'}, room=request.sid)
+                return
+
+            user_id = user_record[0]
+
+            # Actualizar el ganador de la sala
+            cursor.execute(
+                "UPDATE salas SET ganador_id = %s WHERE id = %s",
+                (user_id, codigo_sala)
+            )
+            conn.commit()
+
+            print(f"Ganador guardado en sala {codigo_sala}: usuario {username} (id {user_id})")
+
+        except Exception as e:
+            print(f"Error guardando ganador en sala: {e}")
+            emit('error', {'msg': 'Error al guardar ganador en la base de datos.'}, room=request.sid)
+
+        finally:
+            if cursor:
+                cursor.close()
+            if conn:
+                conn.close()
+        # Notificar a todos en la sala el ganador
+        emit('anunciar_ganador', {'ganador': username}, room=codigo_sala)
 
 # Función auxiliar usada varias veces
 def emit_actualizacion_jugadores(codigo_sala):
