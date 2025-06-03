@@ -1,13 +1,14 @@
 from flask_socketio import join_room, leave_room, emit
 import threading
 from flask import request
-from datetime import datetime
-from data.numeros_salas import numeros_emitidos_por_sala
-from utils.bingo import (
-    generar_carton_bingo_personalizado, emitir_numeros_periodicos,
-    validar_bingo, guardar_sala_y_numeros
-)
 from db import get_db_connection, close_db
+from utils.bingo import (
+    numeros_emitidos_por_sala,
+    generar_carton_bingo_personalizado,
+    emitir_numeros_periodicos,
+    validar_bingo,
+    guardar_sala_y_numeros
+)
 
 # Variables globales para salas y control de hilos
 salas = {}

@@ -64,39 +64,24 @@ def emitir_numeros_periodicos(codigo_sala, socketio, salas):
         if codigo_sala in numeros_emitidos_por_sala:
             del numeros_emitidos_por_sala[codigo_sala]
 
-def guardar_sala_y_numeros(codigo_sala, numeros_con_tiempo, ganador=None):
+def guardar_sala_y_numeros(sala_id, lista_numeros):
     try:
-        connection = get_db_connection()
-        cursor = connection.cursor()
+        conn = get_db_connection()
+        cursor = conn.cursor()
 
-        cursor.execute(
-            """
-            INSERT INTO salas (id, creador_id, estado, fecha_creacion, ganador_id)
-            VALUES (%s, %s, %s, %s, %s)
-            ON CONFLICT (id) DO NOTHING
-            """,
-            (codigo_sala, None, 'finalizada', datetime.utcnow(), ganador)
-        )
+        for num in lista_numeros:
+            cursor.execute("""
+                INSERT INTO numeros_ll (sala_id, numero)
+                VALUES (%s, %s)
+            """, (sala_id, num))
 
-        datos = [
-            (codigo_sala, codigo_sala, numero, llamado_en)
-            for numero, llamado_en in numeros_con_tiempo
-        ]
-        insert_query = """
-            INSERT INTO numeros_llamados (partida_id, sala_id, numero, llamado_en)
-            VALUES (%s, %s, %s, %s)
-        """
-        cursor.executemany(insert_query, datos)
-
-        connection.commit()
+        conn.commit()
         return True
-
     except Exception as e:
-        print(f"❌ Error al guardar en la BD: {e}")
+        print(f"❌ Error al guardar números para la sala {sala_id}: {e}")
         return False
-
     finally:
-        close_db(cursor, connection)
+        close_db(cursor, conn)
 
 def validar_bingo(carton):
     # Validación horizontal
