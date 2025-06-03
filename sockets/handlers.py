@@ -1,6 +1,8 @@
 from flask_socketio import join_room, leave_room, emit
 import threading
 from flask import request
+from datetime import datetime
+from data.numeros_salas import numeros_emitidos_por_sala
 from utils.bingo import (
     generar_carton_bingo_personalizado, emitir_numeros_periodicos,
     validar_bingo, guardar_sala_y_numeros
@@ -106,11 +108,19 @@ def register_socket_events(socketio):
         username = data.get('username', '').strip().lower()
         carton_jugador = data.get('carton')
 
+        from utils.bingo import numeros_emitidos_por_sala, guardar_sala_y_numeros
+
         bingo_valido = validar_bingo(carton_jugador)
 
         if bingo_valido:
+            # 💾 Guardar los números emitidos en la BD
+            if codigo_sala in numeros_emitidos_por_sala:
+                guardar_sala_y_numeros(codigo_sala, numeros_emitidos_por_sala[codigo_sala])
+
+            # 📣 Anunciar ganador
             emit('anunciar_ganador', {'ganador': username}, room=codigo_sala)
 
+            # 🔁 Resetear estados de jugadores
             if codigo_sala in salas:
                 for jugador in salas[codigo_sala]['listos']:
                     salas[codigo_sala]['listos'][jugador] = False

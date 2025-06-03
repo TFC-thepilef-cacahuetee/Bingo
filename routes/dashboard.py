@@ -22,7 +22,6 @@ def dashboard():
 def crear_sala():
     """ Permite al usuario crear una nueva sala de bingo.
     Se genera un código único para la sala y se guarda en la base de datos."""
-    # Genera un código único para la nueva sala usando la función auxiliar
     codigo_sala = generar_codigo_sala()
 
     try:

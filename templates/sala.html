@@ -44,7 +44,6 @@
         let modoLinea = true; // Comienza en modo línea
         let lineaCantada = false; // Para evitar múltiples cantos de línea
         const botonesAccion = document.getElementById('botonesAccion');
-        const btnBingoLinea = document.getElementById('btnBingoLinea');
         const mensajeValidacion = document.getElementById('mensajeValidacion');
 
         socket.emit('unirse_sala', { codigo_sala: codigoSala, username: username });
@@ -195,8 +194,6 @@
                     // Cambiar a modo bingo después de cantar línea
                     modoLinea = false;
                     lineaCantada = true;
-                    btnBingoLinea.textContent = 'Cantar Bingo';
-                    btnBingoLinea.style.backgroundColor = '#4CAF50';
 
                     // Notificar a todos que cambien a modo bingo
                     socket.emit('cambio_a_bingo', { codigo_sala: codigoSala });
@@ -260,7 +257,9 @@
 
         socket.on('partida_iniciada', (data) => {
             alert('🚀 ¡La partida ha comenzado!');
+
             document.getElementById('contenedor-numeros').style.display = 'block';
+            
             botonesAccion.style.display = 'block';
             numerosSalidos = [];
 
@@ -379,10 +378,10 @@
             mostrarMensaje('info', mensaje);
 
             if (data.tipo === 'linea' && !lineaCantada) {
-                modoLinea = false;
                 lineaCantada = true;
-                btnBingoLinea.textContent = 'Cantar Bingo';
-                btnBingoLinea.style.backgroundColor = '#4CAF50';
+
+                // Aquí es donde habilitamos el botón de bingo
+                document.getElementById('btnVerificarBingo').disabled = false;
             }
 
             // Mostrar quién ganó el bingo
@@ -391,8 +390,8 @@
                 document.getElementById('ganadorAnuncio').style.display = 'block';
 
                 // Desactivar botones para todos
-                btnVerificarBingo.disabled = true;
-                btnBingoLinea.disabled = true;
+                document.getElementById('btnBingoLinea').disabled = true;
+                document.getElementById('btnVerificarBingo').disabled = true;
             }
         });
 
