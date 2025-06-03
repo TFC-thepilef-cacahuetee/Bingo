@@ -142,24 +142,17 @@ def register_socket_events(socketio):
         bingo_valido = validar_bingo(carton_jugador)
 
         if bingo_valido:
-            # 💾 Guardar los números emitidos en la BD
-            if codigo_sala in numeros_emitidos_por_sala:
-                guardar_sala_y_numeros(codigo_sala, numeros_emitidos_por_sala[codigo_sala])
-
-            # 📣 Anunciar ganador
+            # Anunciar ganador a todos
             emit('anunciar_ganador', {'ganador': username}, room=codigo_sala)
 
-            # 🔁 Resetear estados de jugadores
+            # Resetear estado 'listo' para todos los jugadores de la sala
             if codigo_sala in salas:
-                numeros_con_tiempo = salas[codigo_sala].get('numeros_llamados', [])
-                exito = guardar_sala_y_numeros(codigo_sala, numeros_con_tiempo)
-                if not exito:
-                    print("❌ Error guardando números en la base de datos")
-                
                 for jugador in salas[codigo_sala]['listos']:
                     salas[codigo_sala]['listos'][jugador] = False
                 emit_actualizacion_jugadores(codigo_sala)
+
         else:
+            # Si no es válido, puede emitir un mensaje o nada
             emit('bingo_invalido', {'msg': 'Bingo no válido'}, room=request.sid)
 
     @socketio.on('bingo_completado')

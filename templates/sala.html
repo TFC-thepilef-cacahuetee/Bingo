@@ -151,7 +151,6 @@
             const totalCeldas = carton.querySelectorAll('.bingo-cell:not(.free)').length;
             const marcados = carton.querySelectorAll('.bingo-cell.marked:not(.free)').length;
 
-            btnBingoLinea.disabled = marcados < 5;
 
             const btnVerificarBingo = document.getElementById('btnVerificarBingo');
             if (btnVerificarBingo) {
