@@ -438,16 +438,18 @@
             }
         });
 
-        socket.on('ganador_bingo', data => {
+        socket.on('anunciar_ganador', data => {
             const ganadorDiv = document.getElementById('ganadorAnuncio');
-            ganadorDiv.textContent = `🎉 ¡${data.username} ha ganado el BINGO! 🎉`;
+            ganadorDiv.textContent = `🎉 ¡${data.ganador} ha ganado el BINGO! 🎉`;
             ganadorDiv.style.display = 'block';
 
-            // Desactivar los botones para todos
-            btnBingoLinea.disabled = true;
+            // Desactivar botones para todos
+            const btnBingoLinea = document.getElementById('btnBingoLinea');
             const btnVerificarBingo = document.getElementById('btnVerificarBingo');
+            if (btnBingoLinea) btnBingoLinea.disabled = true;
             if (btnVerificarBingo) btnVerificarBingo.disabled = true;
         });
+
 
 
 
