@@ -445,6 +445,7 @@ partida_activa_por_sala = {}
 def handle_bingo_completado(data):
     codigo_sala = data.get('codigo_sala')
     username = data.get('username')
+    tipo = data.get('tipo')  # ¿Llega esto? (linea o bingo)
 
     # Parar la emisión de números para esta sala
     partida_activa_por_sala[codigo_sala] = False
@@ -469,14 +470,14 @@ def handle_bingo_completado(data):
 
         user_id = user_record[0]
 
-        # Actualizar el ganador de la sala
-        cursor.execute(
-            "UPDATE salas SET ganador_id = %s WHERE id = %s",
-            (user_id, codigo_sala)
-        )
-        connection.commit()
-
-        print(f"Ganador guardado en sala {codigo_sala}: usuario {username} (id {user_id})")
+        # Actualizar el ganador de la sala solo si es bingo
+        if tipo == 'bingo':
+            cursor.execute(
+                "UPDATE salas SET ganador_id = %s WHERE id = %s",
+                (user_id, codigo_sala)
+            )
+            connection.commit()
+            print(f"Ganador guardado en sala {codigo_sala}: usuario {username} (id {user_id})")
 
     except Exception as e:
         print(f"Error guardando ganador en sala: {e}")
@@ -488,8 +489,11 @@ def handle_bingo_completado(data):
         if connection:
             connection.close()
 
-    # Notificar a todos en la sala el ganador
-    emit('anunciar_ganador', {'ganador': username}, room=codigo_sala)
+    # Emitir eventos para todos en la sala según el tipo
+    if tipo == 'linea':
+        emit('anuncio_linea', {'username': username}, room=codigo_sala)
+    elif tipo == 'bingo':
+        emit('anunciar_ganador', {'ganador': username}, room=codigo_sala)
 
 if __name__ == '__main__':
     socketio.run(app, debug=True, port=5000)

@@ -17,6 +17,8 @@
         <button id="btnListo">Estoy Listo ✅</button>
         <button id="salirSalaBtn">Salir de la Sala ❌</button>
 
+        <!-- Nuevo div para anuncio de línea -->
+        <div id="lineaAnuncio" class="linea-anuncio" style="display: none;"></div>
         <div id="ganadorAnuncio" class="ganador-anuncio" style="display: none;"></div>
 
         <div id="botonesAccion" class="botones-accion" style="display: none;">
@@ -377,6 +379,17 @@
 
             mostrarMensaje('info', mensaje);
 
+            if (data.tipo === 'linea') {
+                const lineaAnuncio = document.getElementById('lineaAnuncio');
+                lineaAnuncio.textContent = `🎉 ¡${data.username} ha cantado LÍNEA! 🎉`;
+                lineaAnuncio.style.display = 'block';
+
+                // Opcional: ocultar después de 5 segundos
+                setTimeout(() => {
+                    lineaAnuncio.style.display = 'none';
+                }, 5000);
+            }
+
             if (data.tipo === 'linea' && !lineaCantada) {
                 modoLinea = false;
                 lineaCantada = true;
@@ -394,6 +407,7 @@
                 btnBingoLinea.disabled = true;
             }
         });
+
 
 
         socket.on('intento_invalido', data => {
