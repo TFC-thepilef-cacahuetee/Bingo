@@ -131,99 +131,99 @@ def register_socket_events(socketio):
     # Supongamos que ya agregaste esta estructura arriba del todo:
 # linea_cantada_por_sala = {}
 
-@socketio.on('linea_cantada')
-def linea_cantada(data):
-    codigo_sala = data.get('codigo_sala')
-    username = data.get('username', '').strip().lower()
-    emit('linea_cantada', {'username': username}, room=codigo_sala)
+    @socketio.on('linea_cantada')
+    def linea_cantada(data):
+        codigo_sala = data.get('codigo_sala')
+        username = data.get('username', '').strip().lower()
+        emit('linea_cantada', {'username': username}, room=codigo_sala)
 
 
-@socketio.on('bingo_cantado')
-def bingo_cantado(data):
-    codigo_sala = data.get('codigo_sala')
-    username = data.get('username', '').strip().lower()
-    carton_jugador = data.get('carton')
+    @socketio.on('bingo_cantado')
+    def bingo_cantado(data):
+        codigo_sala = data.get('codigo_sala')
+        username = data.get('username', '').strip().lower()
+        carton_jugador = data.get('carton')
 
-    from utils.bingo import numeros_emitidos_por_sala, guardar_sala_y_numeros
+        from utils.bingo import numeros_emitidos_por_sala, guardar_sala_y_numeros
 
-    bingo_valido = validar_bingo(carton_jugador)
+        bingo_valido = validar_bingo(carton_jugador)
 
-    if bingo_valido:
-        emit('anunciar_ganador', {'ganador': username}, room=codigo_sala)
+        if bingo_valido:
+            emit('anunciar_ganador', {'ganador': username}, room=codigo_sala)
 
-        if codigo_sala in salas:
-            for jugador in salas[codigo_sala]['listos']:
-                salas[codigo_sala]['listos'][jugador] = False
-            emit_actualizacion_jugadores(codigo_sala)
-    else:
-        emit('bingo_invalido', {'msg': 'Bingo no válido'}, room=request.sid)
+            if codigo_sala in salas:
+                for jugador in salas[codigo_sala]['listos']:
+                    salas[codigo_sala]['listos'][jugador] = False
+                emit_actualizacion_jugadores(codigo_sala)
+        else:
+            emit('bingo_invalido', {'msg': 'Bingo no válido'}, room=request.sid)
 
 
-@socketio.on('bingo_completado')
-def bingo_completado(data):
-    codigo_sala = data.get('codigo_sala')
-    username = data.get('username')
-    tipo = data.get('tipo')  # 'bingo' o 'linea'
-    cantidad = data.get('cantidad', 1)
+    @socketio.on('bingo_completado')
+    def bingo_completado(data):
+        codigo_sala = data.get('codigo_sala')
+        username = data.get('username')
+        tipo = data.get('tipo')  # 'bingo' o 'linea'
+        cantidad = data.get('cantidad', 1)
 
     # 🟡 VALIDAR si ya se cantó línea
-    if tipo == 'linea':
-        if linea_cantada_por_sala.get(codigo_sala, False):
-            emit('intento_invalido', {
-                'username': username,
-                'tipo': tipo,
-                'motivo': 'Ya se cantó la línea en esta sala.'
-            }, to=codigo_sala)
-            return
-        else:
-            linea_cantada_por_sala[codigo_sala] = True
+        if tipo == 'linea':
+            if linea_cantada_por_sala.get(codigo_sala, False):
+                emit('intento_invalido', {
+                    'username': username,
+                    'tipo': tipo,
+                    'motivo': 'Ya se cantó la línea en esta sala.'
+                    }, to=codigo_sala)
+                return
+            else:
+                linea_cantada_por_sala[codigo_sala] = True
 
     # 🔴 Si es bingo, desactivar emisión de números y guardar en BD
-    if tipo == 'bingo':
-        partida_activa_por_sala[codigo_sala] = False
+        if tipo == 'bingo':
+            partida_activa_por_sala[codigo_sala] = False
+    
+            try:
+                conn = get_db_connection()
+                cursor = conn.cursor()
 
-        try:
-            conn = get_db_connection()
-            cursor = conn.cursor()
+                cursor.execute("SELECT id FROM usuarios WHERE username = %s", (username,))
+                user_record = cursor.fetchone()
 
-            cursor.execute("SELECT id FROM usuarios WHERE username = %s", (username,))
-            user_record = cursor.fetchone()
+                if not user_record:
+                    emit('error', {'msg': 'Usuario no encontrado en base de datos.'}, room=request.sid)
+                    return
 
-            if not user_record:
-                emit('error', {'msg': 'Usuario no encontrado en base de datos.'}, room=request.sid)
-                return
+                user_id = user_record[0]
 
-            user_id = user_record[0]
+                cursor.execute(
+                    "UPDATE salas SET ganador_id = %s WHERE id = %s",
+                    (user_id, codigo_sala)
+                )
+                conn.commit()
 
-            cursor.execute(
-                "UPDATE salas SET ganador_id = %s WHERE id = %s",
-                (user_id, codigo_sala)
-            )
-            conn.commit()
+                print(f"Ganador guardado en sala {codigo_sala}: usuario {username} (id {user_id})")
 
-            print(f"Ganador guardado en sala {codigo_sala}: usuario {username} (id {user_id})")
+            except Exception as e:
+                print(f"Error guardando ganador en sala: {e}")
+                emit('error', {'msg': 'Error al guardar ganador en la base de datos.'}, room=request.sid)
 
-        except Exception as e:
-            print(f"Error guardando ganador en sala: {e}")
-            emit('error', {'msg': 'Error al guardar ganador en la base de datos.'}, room=request.sid)
-
-        finally:
-            if cursor:
-                cursor.close()
-            if conn:
-                conn.close()
+            finally:
+                if cursor:
+                    cursor.close()
+                if conn:
+                    conn.close()
 
     # ✅ Notificar a todos el resultado (línea o bingo)
-    emit('bingo_completado', {
-        'tipo': tipo,
-        'username': username,
-        'cantidad': cantidad
-    }, to=codigo_sala)
+        emit('bingo_completado', {
+            'tipo': tipo,
+            'username': username,
+            'cantidad': cantidad
+        }, to=codigo_sala)
 
 
 # Función auxiliar usada varias veces
-def emit_actualizacion_jugadores(codigo_sala):
-    emit('actualizar_jugadores_listos', {
-        'jugadores': salas[codigo_sala]['jugadores'],
-        'listos': salas[codigo_sala]['listos']
-    }, room=codigo_sala)
+    def emit_actualizacion_jugadores(codigo_sala):
+        emit('actualizar_jugadores_listos', {
+            'jugadores': salas[codigo_sala]['jugadores'],
+            'listos': salas[codigo_sala]['listos']
+        }, room=codigo_sala)
