@@ -1,7 +1,6 @@
 from flask_socketio import join_room, leave_room, emit
 import threading
 from flask import request
-from app import socketio
 from db import get_db_connection, close_db
 from utils.bingo import (
     numeros_emitidos_por_sala,
@@ -170,7 +169,7 @@ def bingo_completado(data):
     # 🟡 VALIDAR si ya se cantó línea
     if tipo == 'linea':
         if linea_cantada_por_sala.get(codigo_sala, False):
-            socketio.emit('intento_invalido', {
+            emit('intento_invalido', {
                 'username': username,
                 'tipo': tipo,
                 'motivo': 'Ya se cantó la línea en esta sala.'
@@ -215,7 +214,7 @@ def bingo_completado(data):
                 conn.close()
 
     # ✅ Notificar a todos el resultado (línea o bingo)
-    socketio.emit('bingo_completado', {
+    emit('bingo_completado', {
         'tipo': tipo,
         'username': username,
         'cantidad': cantidad
