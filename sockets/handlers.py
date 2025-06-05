@@ -1,6 +1,7 @@
 from flask_socketio import join_room, leave_room, emit
 import threading
 from flask import request
+from app import socketio
 from db import get_db_connection, close_db
 from utils.bingo import (
     numeros_emitidos_por_sala,
@@ -15,6 +16,7 @@ salas = {}
 hilos_emitir = {}  # <--- Añade este diccionario para controlar los hilos
 # Variable global para controlar la emisión por sala
 partida_activa_por_sala = {}
+linea_cantada_por_sala = {}
 
 def register_socket_events(socketio):
     @socketio.on('unirse_sala')
@@ -127,49 +129,64 @@ def register_socket_events(socketio):
             'marcado': marcado
         }, room=codigo_sala)
 
-    @socketio.on('linea_cantada')
-    def linea_cantada(data):
-        codigo_sala = data.get('codigo_sala')
-        username = data.get('username', '').strip().lower()
-        emit('linea_cantada', {'username': username}, room=codigo_sala)
+    # Supongamos que ya agregaste esta estructura arriba del todo:
+# linea_cantada_por_sala = {}
 
-    @socketio.on('bingo_cantado')
-    def bingo_cantado(data):
-        codigo_sala = data.get('codigo_sala')
-        username = data.get('username', '').strip().lower()
-        carton_jugador = data.get('carton')
+@socketio.on('linea_cantada')
+def linea_cantada(data):
+    codigo_sala = data.get('codigo_sala')
+    username = data.get('username', '').strip().lower()
+    emit('linea_cantada', {'username': username}, room=codigo_sala)
 
-        from utils.bingo import numeros_emitidos_por_sala, guardar_sala_y_numeros
 
-        bingo_valido = validar_bingo(carton_jugador)
+@socketio.on('bingo_cantado')
+def bingo_cantado(data):
+    codigo_sala = data.get('codigo_sala')
+    username = data.get('username', '').strip().lower()
+    carton_jugador = data.get('carton')
 
-        if bingo_valido:
-            # Anunciar ganador a todos
-            emit('anunciar_ganador', {'ganador': username}, room=codigo_sala)
+    from utils.bingo import numeros_emitidos_por_sala, guardar_sala_y_numeros
 
-            # Resetear estado 'listo' para todos los jugadores de la sala
-            if codigo_sala in salas:
-                for jugador in salas[codigo_sala]['listos']:
-                    salas[codigo_sala]['listos'][jugador] = False
-                emit_actualizacion_jugadores(codigo_sala)
+    bingo_valido = validar_bingo(carton_jugador)
 
+    if bingo_valido:
+        emit('anunciar_ganador', {'ganador': username}, room=codigo_sala)
+
+        if codigo_sala in salas:
+            for jugador in salas[codigo_sala]['listos']:
+                salas[codigo_sala]['listos'][jugador] = False
+            emit_actualizacion_jugadores(codigo_sala)
+    else:
+        emit('bingo_invalido', {'msg': 'Bingo no válido'}, room=request.sid)
+
+
+@socketio.on('bingo_completado')
+def bingo_completado(data):
+    codigo_sala = data.get('codigo_sala')
+    username = data.get('username')
+    tipo = data.get('tipo')  # 'bingo' o 'linea'
+    cantidad = data.get('cantidad', 1)
+
+    # 🟡 VALIDAR si ya se cantó línea
+    if tipo == 'linea':
+        if linea_cantada_por_sala.get(codigo_sala, False):
+            socketio.emit('intento_invalido', {
+                'username': username,
+                'tipo': tipo,
+                'motivo': 'Ya se cantó la línea en esta sala.'
+            }, to=codigo_sala)
+            return
         else:
-            # Si no es válido, puede emitir un mensaje o nada
-            emit('bingo_invalido', {'msg': 'Bingo no válido'}, room=request.sid)
+            linea_cantada_por_sala[codigo_sala] = True
 
-    @socketio.on('bingo_completado')
-    def bingo_completado(data):
-        codigo_sala = data.get('codigo_sala')
-        username = data.get('username')
-
-        # Parar la emisión de números para esta sala
+    # 🔴 Si es bingo, desactivar emisión de números y guardar en BD
+    if tipo == 'bingo':
         partida_activa_por_sala[codigo_sala] = False
 
         try:
             conn = get_db_connection()
             cursor = conn.cursor()
 
-            # Obtener user_id del username
             cursor.execute("SELECT id FROM usuarios WHERE username = %s", (username,))
             user_record = cursor.fetchone()
 
@@ -179,7 +196,6 @@ def register_socket_events(socketio):
 
             user_id = user_record[0]
 
-            # Actualizar el ganador de la sala
             cursor.execute(
                 "UPDATE salas SET ganador_id = %s WHERE id = %s",
                 (user_id, codigo_sala)
@@ -197,8 +213,14 @@ def register_socket_events(socketio):
                 cursor.close()
             if conn:
                 conn.close()
-        # Notificar a todos en la sala el ganador
-        emit('anunciar_ganador', {'ganador': username}, room=codigo_sala)
+
+    # ✅ Notificar a todos el resultado (línea o bingo)
+    socketio.emit('bingo_completado', {
+        'tipo': tipo,
+        'username': username,
+        'cantidad': cantidad
+    }, to=codigo_sala)
+
 
 # Función auxiliar usada varias veces
 def emit_actualizacion_jugadores(codigo_sala):

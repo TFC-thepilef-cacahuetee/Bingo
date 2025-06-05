@@ -153,8 +153,14 @@
 
 
             const btnVerificarBingo = document.getElementById('btnVerificarBingo');
+            const btnBingoLinea = document.getElementById('btnBingoLinea');
+            
             if (btnVerificarBingo) {
                 btnVerificarBingo.disabled = marcados !== totalCeldas;
+            }
+
+            if (btnBingoLinea && !lineaCantada) {
+                btnBingoLinea.disabled = marcados === 0;;
             }
         }
 
