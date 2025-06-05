@@ -49,7 +49,7 @@ def emitir_numeros_periodicos(codigo_sala, socketio, salas):
             disponibles = list(todos_numeros - emitidos)
 
             if not disponibles:
-                guardar_sala_y_numeros(codigo_sala, numeros_emitidos_por_sala[codigo_sala], ganador=username)
+                guardar_sala_y_numeros(codigo_sala, numeros_emitidos_por_sala[codigo_sala])
                 socketio.emit('fin_partida', room=codigo_sala)
                 break
 
