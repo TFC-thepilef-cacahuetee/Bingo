@@ -2,7 +2,6 @@ import random
 import time
 from datetime import datetime
 from db import get_db_connection, close_db
-from utils.bingo import guardar_sala_y_numeros, numeros_emitidos_por_sala
 from handlers import partida_activa_por_sala
 
 # 🔁 Variable global para almacenar los números emitidos por sala
