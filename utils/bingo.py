@@ -2,7 +2,7 @@ import random
 import time
 from datetime import datetime
 from db import get_db_connection, close_db
-from handlers import partida_activa_por_sala
+from sockets.handlers import partida_activa_por_sala
 
 # 🔁 Variable global para almacenar los números emitidos por sala
 numeros_emitidos_por_sala = {}
