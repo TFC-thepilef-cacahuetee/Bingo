@@ -2,6 +2,7 @@ import random
 import time
 from datetime import datetime
 from db import get_db_connection, close_db
+from utils.logger import log_event
 
 # 🔁 Variable global para almacenar los números emitidos por sala
 numeros_emitidos_por_sala = {}
@@ -84,12 +85,14 @@ def guardar_sala_y_numeros(sala_id, lista_numeros):
             """, (sala_id, num))
 
         conn.commit()
+        log_event("INFO", f"Números guardados correctamente para sala {sala_id}: {lista_numeros}")
         return True
     except Exception as e:
-        print(f"❌ Error al guardar números para la sala {sala_id}: {e}")
+        log_event("ERROR", f"❌ Error al guardar números para la sala {sala_id}: {e}")
         return False
     finally:
         close_db(cursor, conn)
+
 
 def validar_bingo(carton):
     # Validación horizontal
