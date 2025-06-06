@@ -34,7 +34,7 @@ def register_socket_events(socketio):
             salas[codigo_sala]['jugadores'].append(username)
             salas[codigo_sala]['listos'][username] = False
 
-            # 🔽 NUEVO: Insertar jugador en la tabla jugadores_sala
+            # Insertar jugador en la tabla jugadores_sala
             try:
                 conn = get_db_connection()
                 cursor = conn.cursor()
@@ -91,7 +91,6 @@ def register_socket_events(socketio):
 
                 emit('partida_iniciada', {'cartones': cartones_por_jugador}, room=codigo_sala)
 
-                # --- Cambia aquí: solo lanza un hilo por sala y pasa salas como argumento ---
                 if codigo_sala not in hilos_emitir or not hilos_emitir[codigo_sala].is_alive():
                     thread = threading.Thread(target=emitir_numeros_periodicos, args=(codigo_sala, socketio, salas))
                     hilos_emitir[codigo_sala] = thread
@@ -127,9 +126,6 @@ def register_socket_events(socketio):
             'numero': numero,
             'marcado': marcado
         }, room=codigo_sala)
-
-    # Supongamos que ya agregaste esta estructura arriba del todo:
-# linea_cantada_por_sala = {}
 
     @socketio.on('linea_cantada')
     def linea_cantada(data):
