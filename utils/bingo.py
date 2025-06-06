@@ -82,7 +82,7 @@ def guardar_sala_y_numeros(sala_id, lista_numeros):
             cursor.execute("""
                 INSERT INTO numeros_llamados (sala_id, numero)
                 VALUES (%s, %s)
-            """, (sala_id, num))
+            """, (sala_id, num[0]))
 
         conn.commit()
         log_event("INFO", f"Números guardados correctamente para sala {sala_id}: {lista_numeros}")
