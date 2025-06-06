@@ -86,4 +86,4 @@ def logout():
     # Limpiar la sesión (esto elimina los datos del usuario)
     session.clear()
     flash("✅ Has cerrado sesión exitosamente.")
-    return redirect(url_for('index'))  # Redirigir al usuario a la página de inicio
+    return redirect(url_for('dashboard.index'))  # Redirigir al usuario a la página de inicio

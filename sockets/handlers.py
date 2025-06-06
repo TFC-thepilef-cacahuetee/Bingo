@@ -174,7 +174,7 @@ def register_socket_events(socketio):
             else:
                 linea_cantada_por_sala[codigo_sala] = True
 
-    # 🔴 Si es bingo, desactivar emisión de números y guardar en BD
+    # Si es bingo, desactivar emisión de números y guardar en BD
         if tipo == 'bingo':
             partida_activa_por_sala[codigo_sala] = False
     
@@ -209,7 +209,7 @@ def register_socket_events(socketio):
                 if conn:
                     conn.close()
 
-    # ✅ Notificar a todos el resultado (línea o bingo)
+    # Notificar a todos el resultado (línea o bingo)
         emit('bingo_completado', {
             'tipo': tipo,
             'username': username,
