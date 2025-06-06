@@ -2,7 +2,6 @@ import random
 import time
 from datetime import datetime
 from db import get_db_connection, close_db
-from sockets.handlers import partida_activa_por_sala
 
 # 🔁 Variable global para almacenar los números emitidos por sala
 numeros_emitidos_por_sala = {}
@@ -33,6 +32,10 @@ def generar_carton_bingo_personalizado():
     return carton
 
 def emitir_numeros_periodicos(codigo_sala, socketio, salas):
+
+    #IMPORTATE: Dejar import aqui para evitar importación circular!!!
+    from sockets.handlers import partida_activa_por_sala
+
     try:
         numeros_emitidos_por_sala[codigo_sala] = []
         todos_numeros = set(range(1, 100))
