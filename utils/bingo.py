@@ -80,7 +80,7 @@ def guardar_sala_y_numeros(sala_id, lista_numeros):
 
         for num in lista_numeros:
             cursor.execute("""
-                INSERT INTO numeros_ll (sala_id, numero)
+                INSERT INTO numeros_llamados (sala_id, numero)
                 VALUES (%s, %s)
             """, (sala_id, num))
 
