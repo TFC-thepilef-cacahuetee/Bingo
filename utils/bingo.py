@@ -61,7 +61,7 @@ def emitir_numeros_periodicos(codigo_sala, socketio, salas):
             numeros_emitidos_por_sala[codigo_sala].append((numero, timestamp))
 
             socketio.emit('numero_nuevo', {'numero': numero}, room=codigo_sala)
-            time.sleep(3)
+            time.sleep(2)  # Espera de 2 segundos entre números
 
     except Exception as e:
         print(f"❌ Error en emisión periódica de {codigo_sala}: {e}")

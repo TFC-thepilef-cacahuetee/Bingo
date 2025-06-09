@@ -398,13 +398,13 @@
 
             } else {
                 const noSalidos = numerosMarcados.filter(n => !numerosSalidos.includes(n));
-                mostrarMensaje('error', '❌ Aún hay números no salidos: ' + noSalidos.join(', '));
+                mostrarMensaje('error', '❌ Aún hay números que no han salido ');
                 socket.emit('intento_invalido', {
                     codigo_sala: codigoSala,
                     username: username,
                     tipo: 'bingo',
                     valido: false,
-                    motivo: 'Números no salidos: ' + noSalidos.join(', ')
+                    motivo: 'Números no salidos '
                 });
             }
         });
