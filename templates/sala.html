@@ -244,11 +244,13 @@
                 const carton = data.cartones[nombreJugador];
                 const wrapper = document.createElement('div');
                 wrapper.className = 'bingo-card-wrapper';
-                wrapper.dataset.jugador = nombreJugador;
+                wrapper.dataset.jugador = nombreJugador.trim().toLowerCase();
 
                 const title = document.createElement('div');
                 title.className = 'card-title';
-                title.textContent = nombreJugador === username ? 'Tu cartón' : `Cartón de ${nombreJugador}`;
+                title.textContent = nombreJugador.trim().toLowerCase() === username.trim().toLowerCase()
+                    ? 'Tu cartón'
+                    : `Cartón de ${nombreJugador}`;                
                 wrapper.appendChild(title);
 
                 const cardDiv = document.createElement('div');
@@ -322,7 +324,7 @@
                     celda.classList.remove('marked', 'marked-otro');
 
                     if (marcado) {
-                        if (jugadorQueMarco === username) {
+                        if (jugadorQueMarco.trim().toLowerCase() === username.trim().toLowerCase()) {
                             celda.classList.add('marked'); // verde si soy yo
                         } else {
                             celda.classList.add('marked-otro'); // naranja si es otro
