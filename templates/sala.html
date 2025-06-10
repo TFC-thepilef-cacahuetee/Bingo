@@ -224,82 +224,129 @@
             }, 300);
         });
 
-        socket.on('partida_iniciada', (data) => {
-            alert('🚀 ¡La partida ha comenzado!');
+socket.on('partida_iniciada', (data) => {
+    alert('🚀 ¡La partida ha comenzado!');
 
-            document.getElementById('contenedor-numeros').style.display = 'block';
-            
-            botonesAccion.style.display = 'block';
-            numerosSalidos = [];
+    document.getElementById('contenedor-numeros').style.display = 'block';
+    
+    botonesAccion.style.display = 'block';
+    numerosSalidos = [];
 
-            // Resetear a modo línea al comenzar nueva partida
-            modoLinea = true;
-            btnBingoLinea.textContent = 'Cantar Línea';
-            btnBingoLinea.style.backgroundColor = '#FFA500';
+    // Resetear a modo línea al comenzar nueva partida
+    modoLinea = true;
+    btnBingoLinea.textContent = 'Cantar Línea';
+    btnBingoLinea.style.backgroundColor = '#FFA500';
 
-            const contenedor = document.getElementById('contenedor-cartones');
-            contenedor.innerHTML = '';
+    const contenedor = document.getElementById('contenedor-cartones');
+    contenedor.innerHTML = '';
 
-            Object.keys(data.cartones).forEach(nombreJugador => {
-                const carton = data.cartones[nombreJugador];
-                const wrapper = document.createElement('div');
-                wrapper.className = 'bingo-card-wrapper';
-                wrapper.dataset.jugador = nombreJugador.trim().toLowerCase();
+    // Primero creamos el cartón del usuario actual (si existe)
+    if (data.cartones[username]) {
+        const carton = data.cartones[username];
+        const wrapper = document.createElement('div');
+        wrapper.className = 'bingo-card-wrapper';
+        wrapper.dataset.jugador = username.trim().toLowerCase();
 
-                const title = document.createElement('div');
-                title.className = 'card-title';
-                title.textContent = nombreJugador.trim().toLowerCase() === username.trim().toLowerCase()
-                    ? 'Tu cartón'
-                    : `Cartón de ${nombreJugador}`;                
-                wrapper.appendChild(title);
+        const title = document.createElement('div');
+        title.className = 'card-title';
+        title.textContent = 'Tu cartón';
+        wrapper.appendChild(title);
 
-                const cardDiv = document.createElement('div');
-                cardDiv.className = 'bingo-card';
+        const cardDiv = document.createElement('div');
+        cardDiv.className = 'bingo-card';
 
-                const header = document.createElement('div');
-                header.className = 'bingo-header';
-                ['B', 'I', 'N', 'G', 'O'].forEach(letra => {
-                    const letraDiv = document.createElement('div');
-                    letraDiv.textContent = letra;
-                    header.appendChild(letraDiv);
-                });
-                cardDiv.appendChild(header);
+        const header = document.createElement('div');
+        header.className = 'bingo-header';
+        ['B', 'I', 'N', 'G', 'O'].forEach(letra => {
+            const letraDiv = document.createElement('div');
+            letraDiv.textContent = letra;
+            header.appendChild(letraDiv);
+        });
+        cardDiv.appendChild(header);
 
-                carton.forEach(fila => {
-                    const filaDiv = document.createElement('div');
-                    filaDiv.className = 'bingo-row';
+        carton.forEach(fila => {
+            const filaDiv = document.createElement('div');
+            filaDiv.className = 'bingo-row';
 
-                    fila.forEach((celda, index) => {
-                        const celdaDiv = document.createElement('div');
-                        celdaDiv.className = 'bingo-cell';
+            fila.forEach((celda, index) => {
+                const celdaDiv = document.createElement('div');
+                celdaDiv.className = 'bingo-cell';
 
-                        if (celda === "") {
-                            celdaDiv.classList.add('free');
-                            celdaDiv.textContent = "";
-                        } else {
-                            celdaDiv.textContent = celda;
-                            if (nombreJugador.trim().toLocaleLowerCase() === username.trim().toLocaleLowerCase()) {
-                                celdaDiv.onclick = function () {
-                                    marcarNumero(this, celda);
-                                };
-                            } else {
-                                celdaDiv.style.cursor = 'default';
-                            }
-                        }
+                if (celda === "") {
+                    celdaDiv.classList.add('free');
+                    celdaDiv.textContent = "";
+                } else {
+                    celdaDiv.textContent = celda;
+                    celdaDiv.onclick = function () {
+                        marcarNumero(this, celda);
+                    };
+                }
 
-                        filaDiv.appendChild(celdaDiv);
-                    });
-
-                    cardDiv.appendChild(filaDiv);
-                });
-
-                wrapper.appendChild(cardDiv);
-                contenedor.appendChild(wrapper);
+                filaDiv.appendChild(celdaDiv);
             });
 
-            btnListo.disabled = true;
-            actualizarEstadoBotones();
+            cardDiv.appendChild(filaDiv);
         });
+
+        wrapper.appendChild(cardDiv);
+        contenedor.appendChild(wrapper);
+    }
+
+    // Luego creamos los cartones de los demás jugadores
+    Object.keys(data.cartones).forEach(nombreJugador => {
+        if (nombreJugador !== username) {
+            const carton = data.cartones[nombreJugador];
+            const wrapper = document.createElement('div');
+            wrapper.className = 'bingo-card-wrapper';
+            wrapper.dataset.jugador = nombreJugador.trim().toLowerCase();
+
+            const title = document.createElement('div');
+            title.className = 'card-title';
+            title.textContent = `Cartón de ${nombreJugador}`;
+            wrapper.appendChild(title);
+
+            const cardDiv = document.createElement('div');
+            cardDiv.className = 'bingo-card';
+
+            const header = document.createElement('div');
+            header.className = 'bingo-header';
+            ['B', 'I', 'N', 'G', 'O'].forEach(letra => {
+                const letraDiv = document.createElement('div');
+                letraDiv.textContent = letra;
+                header.appendChild(letraDiv);
+            });
+            cardDiv.appendChild(header);
+
+            carton.forEach(fila => {
+                const filaDiv = document.createElement('div');
+                filaDiv.className = 'bingo-row';
+
+                fila.forEach((celda, index) => {
+                    const celdaDiv = document.createElement('div');
+                    celdaDiv.className = 'bingo-cell';
+
+                    if (celda === "") {
+                        celdaDiv.classList.add('free');
+                        celdaDiv.textContent = "";
+                    } else {
+                        celdaDiv.textContent = celda;
+                        celdaDiv.style.cursor = 'default';
+                    }
+
+                    filaDiv.appendChild(celdaDiv);
+                });
+
+                cardDiv.appendChild(filaDiv);
+            });
+
+            wrapper.appendChild(cardDiv);
+            contenedor.appendChild(wrapper);
+        }
+    });
+
+    btnListo.disabled = true;
+    actualizarEstadoBotones();
+});
 
         socket.on('numero_nuevo', data => {
             const listaNumeros = document.getElementById('lista-numeros');
